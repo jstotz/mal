@@ -1,0 +1,15 @@
+{
+  "name": "jstotz-ts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "cd ../.. && make test^jstotz-ts"
+  },
+  "author": "Jay Stotz",
+  "license": "ISC",
+  "devDependencies": {
+    "prettier": "^2.2.1",
+    "ts-node": "^9.1.1"
+  }
+}

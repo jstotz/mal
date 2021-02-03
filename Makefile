@@ -94,7 +94,7 @@ IMPLS = ada ada.2 awk bash basic bbc-basic c chuck clojure coffee common-lisp cp
 	guile haskell haxe hy io java js jq julia kotlin livescript logo lua make mal \
 	matlab miniMAL nasm nim objc objpascal ocaml perl perl6 php picolisp pike plpgsql \
 	plsql powershell ps python python.2 r racket rexx rpython ruby rust scala scheme skew \
-	swift swift3 swift4 swift5 tcl ts vala vb vhdl vimscript wasm wren yorick xslt zig
+	swift swift3 swift4 swift5 tcl ts jstotz-ts vala vb vhdl vimscript wasm wren yorick xslt zig
 
 EXTENSION = .mal
 
@@ -185,6 +185,7 @@ scheme_STEP_TO_PROG_cyclone     = impls/scheme/$($(1))
 scheme_STEP_TO_PROG_foment      = impls/scheme/$($(1)).scm
 
 # Map of step (e.g. "step8") to executable file for that step
+jstotz-ts_STEP_TO_PROG =     impls/jstotz-ts/build/$($(1)).js
 ada_STEP_TO_PROG =           impls/ada/$($(1))
 ada.2_STEP_TO_PROG =         impls/ada.2/$($(1))
 awk_STEP_TO_PROG =           impls/awk/$($(1)).awk
