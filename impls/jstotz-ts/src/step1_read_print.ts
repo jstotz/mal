@@ -1,8 +1,8 @@
 import { Result } from "neverthrow";
 import readline from "readline";
 import { debugForm, printForm } from "./printer";
-import { ReadError, readStr } from "./reader";
-import { MalType } from "./types";
+import { readStr } from "./reader";
+import { MalError, MalType } from "./types";
 
 function read(input: string) {
   return readStr(input);
@@ -19,7 +19,7 @@ function print(form: MalType): string {
   return printForm(form);
 }
 
-function rep(input: string): Result<string, ReadError> {
+function rep(input: string): Result<string, MalError> {
   return read(input).map((form) => print(evalInput(form)));
 }
 

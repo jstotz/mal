@@ -1,19 +1,18 @@
 import { err, ok, Result } from "neverthrow";
-import { MalAtom, MalHashMap, MalList, MalType, MalVector } from "./types";
+import {
+  MalAtom,
+  MalError,
+  MalHashMap,
+  MalList,
+  MalType,
+  MalVector,
+} from "./types";
 
 type Token = string;
 
-const TOKEN_EOF = "";
-const TOKEN_COMMENT_START = ";";
-
 const tokenRegexp = /[\s,]*(~@|[\[\]{}()'`~^@]|"(?:\\.|[^\\"])*"?|;.*|[^\s\[\]{}('"`,;)]*)/g;
 
-type ReadResult<T extends MalType> = Result<T, ReadError>;
-
-export type ReadError =
-  | { message: string; type: "unexpected_token"; token: string }
-  | { message: string; type: "unexpected_eof" }
-  | { message: string; type: "invalid_hash_map" };
+type ReadResult<T extends MalType> = Result<T, MalError>;
 
 class Reader {
   position: number = 0;
@@ -87,7 +86,7 @@ function readSequence<T extends MalType>(
 
 function readAtom(reader: Reader): ReadResult<MalAtom> {
   let token = reader.next();
-  if (token.match(/^\d+/)) {
+  if (token.match(/^-?\d+/)) {
     return ok({ type: "number", value: parseInt(token, 10) });
   } else if (token[0] === '"') {
     // TODO: don't cheat by using JSON parser
