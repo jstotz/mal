@@ -153,6 +153,7 @@ perl6_TEST_OPTS = --test-timeout=60
 plpgsql_TEST_OPTS = --start-timeout 60 --test-timeout 180
 plsql_TEST_OPTS = --start-timeout 120 --test-timeout 120
 vimscript_TEST_OPTS = --test-timeout 30
+jstotz-ts_TEST_OPTS = --test-timeout 2
 ifeq ($(MAL_IMPL),vimscript)
 mal_TEST_OPTS = --start-timeout 60 --test-timeout 180
 else ifeq ($(MAL_IMPL),powershell)
