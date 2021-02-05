@@ -5,7 +5,7 @@ all: ts
 node_modules:
 	npm install
 
-build/step%.js: node_modules src/step%.ts
+build/step%.js: node_modules src/*.ts
 	./node_modules/.bin/tsc -p .
 
 .PHONY: ts clean
@@ -13,4 +13,4 @@ build/step%.js: node_modules src/step%.ts
 ts: $(foreach s,$(STEP_SOURCES),build/$(s:src/%.ts=%).js)
 
 clean:
-	rm -f *.js
+	rm -f build/*.js
