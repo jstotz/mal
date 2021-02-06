@@ -1,7 +1,9 @@
+import fs from "fs";
 import { ok } from "neverthrow";
 import { MalEnv, malEnvSet, malNewEnv } from "./env";
-import { malUnwrapAll, malUnwrapSeq } from "./errors";
+import { malUnwrap, malUnwrapAll, malUnwrapSeq } from "./errors";
 import { printForm } from "./printer";
+import { readStr } from "./reader";
 import {
   malBoolean,
   malEqual,
@@ -97,5 +99,15 @@ malDefCore("println", (...args) => {
   console.log(...args.map((f) => printForm(f, false)));
   return ok(malNil());
 });
+
+malDefCore("read-string", (str) =>
+  malUnwrap("string", str).andThen((str) => readStr(str))
+);
+
+malDefCore("slurp", (fileName) =>
+  malUnwrap("string", fileName).andThen((fileName) =>
+    ok(malString(fs.readFileSync(fileName).toString()))
+  )
+);
 
 export default coreEnv;
