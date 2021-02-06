@@ -5,7 +5,7 @@ import { MalEnv, malEnvGet, malEnvSet, malNewEnv } from "./env";
 import { MalError, malUnwrap, malUnwrapAll } from "./errors";
 import { debugForm, printForm } from "./printer";
 import { readStr } from "./reader";
-import { MalFunction, MalList, malNil, MalType } from "./types";
+import { MalFunction, malIsSeq, MalList, malNil, MalType } from "./types";
 
 function read(input: string) {
   return readStr(input);
@@ -17,6 +17,7 @@ function malCall(
 ): Result<MalType, MalError> {
   return malUnwrap("function", malFn).andThen((fn) => fn(...args));
 }
+
 function malEvalAst(ast: MalType, env: MalEnv): Result<MalType, MalError> {
   switch (ast.type) {
     case "list":
@@ -108,11 +109,12 @@ function malEvalLet(
 }
 
 function malEvalDo(list: MalList, env: MalEnv): Result<MalType, MalError> {
-  for (let i = 0; i < list.value.length; i++) {
+  for (let i = 1; i < list.value.length; i++) {
     const form = list.value[i];
     const evalResult = malEvalAst(form, env);
     if (evalResult.isErr()) return evalResult;
     if (i === list.value.length - 1) {
+      console.log("returning", evalResult.value);
       return ok(evalResult.value);
     }
   }
@@ -147,10 +149,10 @@ function malEvalFn(
   outerEnv: MalEnv
 ): Result<MalFunction, MalError> {
   const [, bindings, body] = list.value;
-  if (bindings.type !== "list") {
+  if (!malIsSeq(bindings)) {
     return err({
       type: "type_error",
-      message: "function bindings must be a list",
+      message: "function bindings must be a sequence",
     });
   }
   return malUnwrapAll("symbol", bindings.value).andThen((bindingKeys) =>
@@ -213,6 +215,8 @@ function rep(input: string): Result<string, MalError> {
 }
 
 function startRepl() {
+  rep("(def! not (fn* (a) (if a false true)))");
+
   let rl = readline.createInterface(process.stdin, process.stdout);
   rl.setPrompt("user> ");
   rl.on("line", (input) => {

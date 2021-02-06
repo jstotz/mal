@@ -75,8 +75,34 @@ export function malFunction(value: MalFunctionValue): MalFunction {
   return { type: "function", value };
 }
 
+export function malIsSeq(value: MalType): value is MalList | MalVector {
+  return value.type === "list" || value.type === "vector";
+}
+
 const MAL_NIL: MalNil = { type: "nil", value: null };
 
 export function malNil(): MalNil {
   return MAL_NIL;
+}
+
+export function malList(value: MalType[]): MalList {
+  return { type: "list", value };
+}
+
+export function malBoolean(value: boolean): MalBoolean {
+  return { type: "boolean", value };
+}
+
+export function malString(value: string): MalString {
+  return { type: "string", value };
+}
+
+export function malEqual(a: MalType, b: MalType): boolean {
+  if (malIsSeq(a) && malIsSeq(b)) {
+    if (a.value.length !== b.value.length) {
+      return false;
+    }
+    return a.value.every((element, i) => malEqual(element, b.value[i]));
+  }
+  return a.type === b.type && a.value === b.value;
 }

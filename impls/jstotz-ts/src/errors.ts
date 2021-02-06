@@ -20,6 +20,15 @@ export function malUnwrap<
   return ok((ast.value as unknown) as Value);
 }
 
+export function malUnwrapSeq(ast: MalType): Result<MalType[], MalError> {
+  if (!Array.isArray(ast.value))
+    return err({
+      type: "type_error",
+      message: `Expected sequence, got ${ast.type}`,
+    });
+  return ok(ast.value);
+}
+
 export function malUnwrapAll<
   T extends MalType["type"],
   Value = Extract<MalType, { type: T }>["value"]

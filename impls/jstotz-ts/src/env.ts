@@ -1,4 +1,4 @@
-import { malNil, MalType } from "./types";
+import { malList, malNil, MalType } from "./types";
 
 export interface MalEnv {
   data: Map<string, MalType>;
@@ -11,7 +11,15 @@ export function malNewEnv(
   exprs: MalType[] = []
 ): MalEnv {
   const env = { data: new Map(), outer: outer };
-  bindingKeys.forEach((key, i) => env.data.set(key, exprs[i] ?? malNil()));
+  for (let i = 0; i < bindingKeys.length; i++) {
+    let key = bindingKeys[i];
+    if (key === "&") {
+      key = bindingKeys[i + 1];
+      env.data.set(key, malList(exprs.slice(i)));
+      break;
+    }
+    env.data.set(key, exprs[i] ?? malNil());
+  }
   return env;
 }
 
