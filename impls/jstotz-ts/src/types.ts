@@ -1,4 +1,5 @@
 import { Result } from "neverthrow";
+import { MalEnv } from "./env";
 import { MalError } from "./errors";
 
 export interface MalNumber {
@@ -55,9 +56,22 @@ export type MalFunction = {
   value: MalFunctionValue;
 };
 
+export interface MalFunctionDefValue {
+  body: MalType;
+  env: MalEnv;
+  paramNames: string[];
+  function: MalFunction;
+}
+
+export type MalFunctionDef = {
+  type: "function_def";
+  value: MalFunctionDefValue;
+};
+
 export type MalType = MalList | MalAtom;
 export type MalAtom =
   | MalFunction
+  | MalFunctionDef
   | MalNumber
   | MalSymbol
   | MalString

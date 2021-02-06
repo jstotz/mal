@@ -38,6 +38,8 @@ export function printForm(form: MalType, readably = true): string {
       return String(form.value);
     case "function":
       return "#<function>";
+    case "function_def":
+      return "#<function*>";
     default:
       const unhandledForm: never = form;
       throw new Error(`Unhandled form type: ${unhandledForm}`);
