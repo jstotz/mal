@@ -46,9 +46,13 @@ export interface MalVector {
   value: MalType[];
 }
 
+export type MalFunctionValue = (
+  ...args: MalType[]
+) => Result<MalType, MalError>;
+
 export type MalFunction = {
   type: "function";
-  value: (...args: MalType[]) => Result<MalType, MalError>;
+  value: MalFunctionValue;
 };
 
 export type MalType = MalList | MalAtom;
@@ -67,9 +71,7 @@ export function malNumber(value: number): MalNumber {
   return { type: "number", value };
 }
 
-export function malFunction(
-  value: (...args: MalType[]) => Result<MalType, MalError>
-): MalFunction {
+export function malFunction(value: MalFunctionValue): MalFunction {
   return { type: "function", value };
 }
 

@@ -1,17 +1,11 @@
 import { combine, err, ok, Result } from "neverthrow";
 import readline from "readline";
+import coreEnv from "./core";
 import { MalEnv, malEnvGet, malEnvSet, malNewEnv } from "./env";
 import { MalError, malUnwrap, malUnwrapAll } from "./errors";
 import { debugForm, printForm } from "./printer";
 import { readStr } from "./reader";
-import {
-  malFunction as malFn,
-  MalFunction,
-  MalList,
-  malNil,
-  malNumber,
-  MalType,
-} from "./types";
+import { MalFunction, MalList, malNil, MalType } from "./types";
 
 function read(input: string) {
   return readStr(input);
@@ -23,49 +17,6 @@ function malCall(
 ): Result<MalType, MalError> {
   return malUnwrap("function", malFn).andThen((fn) => fn(...args));
 }
-
-const replEnv: MalEnv = malNewEnv();
-
-malEnvSet(
-  replEnv,
-  "+",
-  malFn((...args) =>
-    malUnwrapAll("number", args).map((numbers) =>
-      malNumber(numbers.reduce((a, b) => a + b))
-    )
-  )
-);
-
-malEnvSet(
-  replEnv,
-  "-",
-  malFn((...args) =>
-    malUnwrapAll("number", args).map((numbers) =>
-      malNumber(numbers.reduce((a, b) => a - b))
-    )
-  )
-);
-
-malEnvSet(
-  replEnv,
-  "*",
-  malFn((...args) =>
-    malUnwrapAll("number", args).map((numbers) =>
-      malNumber(numbers.reduce((a, b) => a * b))
-    )
-  )
-);
-
-malEnvSet(
-  replEnv,
-  "/",
-  malFn((...args) =>
-    malUnwrapAll("number", args).map((numbers) =>
-      malNumber(numbers.reduce((a, b) => a / b))
-    )
-  )
-);
-
 function malEvalAst(ast: MalType, env: MalEnv): Result<MalType, MalError> {
   switch (ast.type) {
     case "list":
@@ -258,7 +209,7 @@ function print(
 }
 
 function rep(input: string): Result<string, MalError> {
-  return read(input).andThen((form) => print(malEval(form, replEnv)));
+  return read(input).andThen((form) => print(malEval(form, coreEnv)));
 }
 
 function startRepl() {
