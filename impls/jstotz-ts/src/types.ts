@@ -72,3 +72,9 @@ export function malFunction(
 ): MalFunction {
   return { type: "function", value };
 }
+
+const MAL_NIL: MalNil = { type: "nil", value: null };
+
+export function malNil(): MalNil {
+  return MAL_NIL;
+}

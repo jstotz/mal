@@ -28,8 +28,9 @@ export function printForm(form: MalType): string {
     case "number":
     case "keyword":
     case "symbol":
-    case "function":
       return String(form.value);
+    case "function":
+      return "#<function>";
     default:
       const unhandledForm: never = form;
       throw new Error(`Unhandled form type: ${unhandledForm}`);
