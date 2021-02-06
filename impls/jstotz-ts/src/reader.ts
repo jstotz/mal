@@ -98,7 +98,6 @@ function readAtom(reader: Reader): ReadResult<MalAtom> {
   } else if (token[0] === ":") {
     return ok({ type: "keyword", value: token });
   } else if (token === "true") {
-    reader.next();
     return ok({ type: "boolean", value: true });
   } else if (token === "false") {
     return ok({ type: "boolean", value: false });
