@@ -89,7 +89,7 @@ function evalAst(ast: MalType, env: MalEnv): Result<MalType, MalError> {
       if (value === undefined) {
         return err({
           type: "symbol_not_found",
-          message: `Symbol not found: ${ast.value}`,
+          message: `Symbol ${ast.value} not found`,
         });
       }
       return ok(value);
@@ -112,8 +112,46 @@ function evalMalDef(list: MalList, env: MalEnv): Result<MalType, MalError> {
   );
 }
 
-function evalMalLet(list: MalList, env: MalEnv): Result<MalType, MalError> {
-  return err({ type: "type_error", message: "not implemented" });
+function evalMalLet(
+  list: MalList,
+  outerEnv: MalEnv
+): Result<MalType, MalError> {
+  const letEnv = malNewEnv(outerEnv);
+  const [, bindings, body] = list.value;
+  if (bindings?.type !== "list" && bindings?.type !== "vector") {
+    return err({
+      type: "type_error",
+      message: "Expected bindings to be a list or vector in let*",
+    });
+  }
+  if (bindings.value.length % 2 !== 0) {
+    return err({
+      type: "type_error",
+      message: "Binding list in let* has mismatched keys and values",
+    });
+  }
+  if (body === undefined) {
+    return err({
+      type: "type_error",
+      message: "Expected body in let*",
+    });
+  }
+  for (let i = 0; i < bindings.value.length; i += 2) {
+    const bindingKey = bindings.value[i];
+    const bindingValue = bindings.value[i + 1];
+    if (bindingKey.type !== "symbol") {
+      return err({
+        type: "type_error",
+        message: `Expected let* binding key to be a symbol. Got: ${printForm(
+          bindingKey
+        )}`,
+      });
+    }
+    const evaledBindingValue = evalMal(bindingValue, letEnv);
+    if (evaledBindingValue.isErr()) return evaledBindingValue;
+    malEnvSet(letEnv, bindingKey.value, evaledBindingValue.value);
+  }
+  return evalMal(body, letEnv);
 }
 
 function evalMal(ast: MalType, env: MalEnv): Result<MalType, MalError> {
