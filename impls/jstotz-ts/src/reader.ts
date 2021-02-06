@@ -1,12 +1,6 @@
 import { err, ok, Result } from "neverthrow";
-import {
-  MalAtom,
-  MalError,
-  MalHashMap,
-  MalList,
-  MalType,
-  MalVector,
-} from "./types";
+import { MalError } from "./errors";
+import { MalAtom, MalHashMap, MalList, MalType, MalVector } from "./types";
 
 type Token = string;
 

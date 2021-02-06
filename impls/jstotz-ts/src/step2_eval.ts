@@ -1,39 +1,15 @@
 import { combine, err, ok, Result } from "neverthrow";
 import readline from "readline";
+import { MalError, malUnwrap, malUnwrapAll } from "./errors";
 import { debugForm, printForm } from "./printer";
 import { readStr } from "./reader";
-import {
-  MalError,
-  malFunction as malFn,
-  MalFunction,
-  malNumber,
-  MalType,
-} from "./types";
+import { malFunction as malFn, MalFunction, malNumber, MalType } from "./types";
 
 function read(input: string) {
   return readStr(input);
 }
 
 type MalEnv = Map<string, MalFunction | MalType>;
-
-function malUnwrap<
-  T extends MalType["type"],
-  Value = Extract<MalType, { type: T }>["value"]
->(type: T, ast: MalType): Result<Value, MalError> {
-  if (ast.type !== type)
-    return err({
-      type: "type_error",
-      message: `Expected type ${type}, got ${ast.type}`,
-    });
-  return ok((ast.value as unknown) as Value);
-}
-
-function malUnwrapAll<
-  T extends MalType["type"],
-  Value = Extract<MalType, { type: T }>["value"]
->(type: T, ast: MalType[]): Result<Value[], MalError> {
-  return combine(ast.map((v) => malUnwrap<T, Value>(type, v)));
-}
 
 function malCall(
   malFn: MalType,

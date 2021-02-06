@@ -1,4 +1,5 @@
 import { Result } from "neverthrow";
+import { MalError } from "./errors";
 
 export interface MalNumber {
   type: "number";
@@ -71,10 +72,3 @@ export function malFunction(
 ): MalFunction {
   return { type: "function", value };
 }
-
-export type MalError =
-  | { message: string; type: "unexpected_token"; token: string }
-  | { message: string; type: "unexpected_eof" }
-  | { message: string; type: "invalid_hash_map" }
-  | { message: string; type: "symbol_not_found" }
-  | { message: string; type: "type_error" };

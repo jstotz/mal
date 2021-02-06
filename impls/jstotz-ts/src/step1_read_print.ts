@@ -1,8 +1,9 @@
 import { Result } from "neverthrow";
 import readline from "readline";
+import { MalError } from "./errors";
 import { debugForm, printForm } from "./printer";
 import { readStr } from "./reader";
-import { MalError, MalType } from "./types";
+import { MalType } from "./types";
 
 function read(input: string) {
   return readStr(input);
