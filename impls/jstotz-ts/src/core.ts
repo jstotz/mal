@@ -59,7 +59,7 @@ malDefCore("empty?", (form) =>
 );
 
 malDefCore("count", (form) =>
-  malUnwrapSeq(form).map((value) => malNumber(value.length))
+  ok(malNumber(malUnwrapSeq(form).unwrapOr([]).length))
 );
 
 malDefCore("=", (a, b) => ok(malBoolean(malEqual(a, b))));

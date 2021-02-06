@@ -8,23 +8,27 @@ function hashMapKeyToForm(value: string): MalString | MalKeyword {
   }
 }
 
-export function printForm(form: MalType, printReadably = true): string {
+export function printForm(form: MalType, readably = true): string {
   switch (form.type) {
     case "list":
-      return `(${form.value.map((f) => printForm(f)).join(" ")})`;
+      return `(${form.value.map((f) => printForm(f, readably)).join(" ")})`;
     case "vector":
-      return `[${form.value.map((f) => printForm(f)).join(" ")}]`;
+      return `[${form.value.map((f) => printForm(f, readably)).join(" ")}]`;
     case "hash_map":
       return `{${Array.from(form.value)
-        .map(([k, v]) => `${printForm(hashMapKeyToForm(k))} ${printForm(v)}`)
+        .map(
+          ([k, v]) =>
+            `${printForm(hashMapKeyToForm(k))} ${printForm(v, readably)}`
+        )
         .join(" ")}}`;
     case "nil":
       return "nil";
     case "string":
-      if (printReadably === true) {
+      if (readably === true) {
         // TODO: don't cheat by using JSON stringify
         return JSON.stringify(form.value);
       } else {
+        console.log("not readably:", form.value);
         return form.value;
       }
     case "boolean":

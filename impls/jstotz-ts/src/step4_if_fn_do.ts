@@ -111,10 +111,9 @@ function malEvalLet(
 function malEvalDo(list: MalList, env: MalEnv): Result<MalType, MalError> {
   for (let i = 1; i < list.value.length; i++) {
     const form = list.value[i];
-    const evalResult = malEvalAst(form, env);
+    const evalResult = malEval(form, env);
     if (evalResult.isErr()) return evalResult;
     if (i === list.value.length - 1) {
-      console.log("returning", evalResult.value);
       return ok(evalResult.value);
     }
   }
