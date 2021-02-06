@@ -79,17 +79,12 @@ function malEvalAst(ast: MalType, env: MalEnv): Result<MalType, MalError> {
         Array.from(ast.value).map(([key, value]) =>
           malEval(value, env).map((evaled) => ({ key, value: evaled }))
         )
-      )
-        .map((evaledPairs) => {
-          console.log("evaledPairs", evaledPairs);
-          return evaledPairs;
-        })
-        .map((evaledPairs) => ({
-          type: "hash_map",
-          value: new Map<string, MalType>(
-            evaledPairs.map((pair) => [pair.key, pair.value])
-          ),
-        }));
+      ).map((evaledPairs) => ({
+        type: "hash_map",
+        value: new Map<string, MalType>(
+          evaledPairs.map((pair) => [pair.key, pair.value])
+        ),
+      }));
     }
     case "symbol": {
       let value = malEnvGet(env, ast.value);
@@ -180,7 +175,6 @@ function malCastBoolean(ast: MalType): boolean {
 }
 
 function malEvalIf(list: MalList, env: MalEnv): Result<MalType, MalError> {
-  console.log("if:", printForm(list), list.value.length);
   const [, cond, ifBody, elseBody] = list.value;
   if (ifBody === undefined) {
     return err({ type: "type_error", message: "if called without a body" });
@@ -226,7 +220,6 @@ function malEval(ast: MalType, env: MalEnv): Result<MalType, MalError> {
 
   if (ast.value.length === 0) return ok(ast);
   if (ast.value[0].type === "symbol") {
-    console.log("in evalMal:", ast);
     switch (ast.value[0].value) {
       case "def!":
         return malEvalDef(ast, env);
