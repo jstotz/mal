@@ -1,12 +1,18 @@
-import { MalType } from "./types";
+import { malNil, MalType } from "./types";
 
 export interface MalEnv {
   data: Map<string, MalType>;
   outer?: MalEnv;
 }
 
-export function malNewEnv(outer: MalEnv | undefined = undefined): MalEnv {
-  return { data: new Map(), outer: outer };
+export function malNewEnv(
+  outer: MalEnv | undefined = undefined,
+  bindingKeys: string[] = [],
+  exprs: MalType[] = []
+): MalEnv {
+  const env = { data: new Map(), outer: outer };
+  bindingKeys.forEach((key, i) => env.data.set(key, exprs[i] ?? malNil()));
+  return env;
 }
 
 export function malEnvSet(env: MalEnv, key: string, value: MalType): MalType {

@@ -6,6 +6,7 @@ import { debugForm, printForm } from "./printer";
 import { readStr } from "./reader";
 import {
   malFunction as malFn,
+  MalFunction,
   MalList,
   malNil,
   malNumber,
@@ -196,6 +197,28 @@ function malEvalIf(list: MalList, env: MalEnv): Result<MalType, MalError> {
   }
 }
 
+function malEvalFn(
+  list: MalList,
+  outerEnv: MalEnv
+): Result<MalFunction, MalError> {
+  const [, bindings, body] = list.value;
+  if (bindings.type !== "list") {
+    return err({
+      type: "type_error",
+      message: "function bindings must be a list",
+    });
+  }
+  return malUnwrapAll("symbol", bindings.value).andThen((bindingKeys) =>
+    ok({
+      type: "function",
+      value: (...args) => {
+        const env = malNewEnv(outerEnv, bindingKeys, args);
+        return malEval(body, env);
+      },
+    })
+  );
+}
+
 function malEval(ast: MalType, env: MalEnv): Result<MalType, MalError> {
   if (ast.type !== "list") {
     return malEvalAst(ast, env);
@@ -213,6 +236,8 @@ function malEval(ast: MalType, env: MalEnv): Result<MalType, MalError> {
         return malEvalDo(ast, env);
       case "if":
         return malEvalIf(ast, env);
+      case "fn*":
+        return malEvalFn(ast, env);
     }
   }
   let evalResult = malEvalAst(ast, env);
