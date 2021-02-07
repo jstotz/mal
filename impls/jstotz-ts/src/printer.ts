@@ -28,7 +28,6 @@ export function printForm(form: MalType, readably = true): string {
         // TODO: don't cheat by using JSON stringify
         return JSON.stringify(form.value);
       } else {
-        console.log("not readably:", form.value);
         return form.value;
       }
     case "boolean":

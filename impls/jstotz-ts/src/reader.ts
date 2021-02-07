@@ -1,6 +1,13 @@
 import { err, ok, Result } from "neverthrow";
 import { MalError } from "./errors";
-import { MalAtom, MalHashMap, MalList, MalType, MalVector } from "./types";
+import {
+  MalAtom,
+  MalHashMap,
+  MalList,
+  MalString,
+  MalType,
+  MalVector,
+} from "./types";
 
 type Token = string;
 
@@ -78,23 +85,55 @@ function readSequence<T extends MalType>(
   }
 }
 
+function parseStringLiteral(token: Token): ReadResult<MalString> {
+  let errorEof: MalError = {
+    type: "unexpected_eof",
+    message: 'Unexpected EOF while parsing string. Expected "',
+  };
+  let escapedStr = "";
+  let inEscape = false;
+  if (token.length === 1) {
+    return err(errorEof);
+  }
+  for (let i = 1; i < token.length; i++) {
+    const chr = token[i];
+
+    if (i === token.length - 1) {
+      if (chr !== '"' || inEscape) {
+        return err(errorEof);
+      }
+      break;
+    }
+
+    if (inEscape) {
+      inEscape = false;
+      if (chr === "n") {
+        escapedStr += "\n";
+      } else {
+        escapedStr += chr;
+      }
+      continue;
+    }
+
+    if (chr === "\\") {
+      inEscape = true;
+      continue;
+    }
+
+    escapedStr += chr;
+  }
+  return ok({
+    type: "string",
+    value: escapedStr,
+  });
+}
+
 function readAtom(reader: Reader): ReadResult<MalAtom> {
   let token = reader.next();
   if (token.match(/^-?\d+/)) {
     return ok({ type: "number", value: parseInt(token, 10) });
   } else if (token[0] === '"') {
-    // TODO: don't cheat by using JSON parser
-    try {
-      return ok({ type: "string", value: JSON.parse(`[${token}]`)[0] });
-    } catch (e) {
-      if ((e.message = ~/Unexpected end of JSON input/)) {
-        return err({
-          type: "unexpected_eof",
-          message: 'Unexpected EOF while reading string. Expected "',
-        });
-      }
-      throw e;
-    }
+    return parseStringLiteral(token);
   } else if (token[0] === ":") {
     return ok({ type: "keyword", value: token });
   } else if (token === "true") {
