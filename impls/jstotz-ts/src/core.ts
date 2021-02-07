@@ -1,10 +1,11 @@
 import fs from "fs";
-import { ok } from "neverthrow";
+import { ok, Result } from "neverthrow";
 import { MalEnv, malEnvSet, malNewEnv } from "./env";
-import { malUnwrap, malUnwrapAll, malUnwrapSeq } from "./errors";
+import { MalError, malUnwrap, malUnwrapAll, malUnwrapSeq } from "./errors";
 import { printForm } from "./printer";
 import { readStr } from "./reader";
 import {
+  malAtomRef,
   malBoolean,
   malEqual,
   malFunction,
@@ -13,12 +14,26 @@ import {
   malNil,
   malNumber,
   malString,
+  MalType,
 } from "./types";
 
 const coreEnv: MalEnv = malNewEnv();
 
 function malDefCore(name: string, fn: MalFunctionValue) {
   malEnvSet(coreEnv, name, malFunction(fn));
+}
+
+function malCallFunction(
+  fn: MalType,
+  ...args: MalType[]
+): Result<MalType, MalError> {
+  switch (fn.type) {
+    case "function":
+      return fn.value(...args);
+    case "function_def":
+      return fn.value.function.value(...args);
+  }
+  return ok(malNil());
 }
 
 malDefCore("+", (...args) =>
@@ -107,6 +122,24 @@ malDefCore("read-string", (str) =>
 malDefCore("slurp", (fileName) =>
   malUnwrap("string", fileName).andThen((fileName) =>
     ok(malString(fs.readFileSync(fileName).toString()))
+  )
+);
+
+malDefCore("atom", (value) => ok(malAtomRef(value)));
+malDefCore("atom?", (value) => ok(malBoolean(value.type === "atom_ref")));
+malDefCore("deref", (atom) => malUnwrap("atom_ref", atom));
+malDefCore("reset!", (atom, value) =>
+  malUnwrap("atom_ref", atom).map((_) => {
+    atom.value = value;
+    return value;
+  })
+);
+malDefCore("swap!", (atom, fn, ...rest) =>
+  malUnwrap("atom_ref", atom).andThen((prevValue) =>
+    malCallFunction(fn, prevValue, ...rest).map((newValue) => {
+      atom.value = newValue;
+      return newValue;
+    })
   )
 );
 

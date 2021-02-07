@@ -5,7 +5,15 @@ import { MalEnv, malEnvGet, malEnvSet, malNewEnv } from "./env";
 import { MalError, malUnwrapAll } from "./errors";
 import { printForm } from "./printer";
 import { readStr } from "./reader";
-import { MalFunctionDef, malIsSeq, MalList, malNil, MalType } from "./types";
+import {
+  MalFunctionDef,
+  malIsSeq,
+  malList,
+  MalList,
+  malNil,
+  malString,
+  MalType,
+} from "./types";
 
 function read(input: string) {
   return readStr(input);
@@ -194,7 +202,6 @@ function malEval(ast: MalType, env: MalEnv): Result<MalType, MalError> {
     if (ast.value[0].type === "symbol") {
       switch (ast.value[0].value) {
         case "def!":
-          console.log("def!", ast, env);
           return malEvalDef(ast, env);
         case "let*":
           updateState(malEvalLet(ast, state));
@@ -252,16 +259,33 @@ function rep(input: string): Result<string, MalError> {
 }
 
 function startRepl() {
-  rep("(def! not (fn* (a) (if a false true)))")._unsafeUnwrap();
+  const mustEval = (input: string) =>
+    read(input)
+      .andThen((form) => malEval(form, coreEnv))
+      .orElse((e) => {
+        throw e;
+      });
+
+  mustEval("(def! not (fn* (a) (if a false true)))");
+  mustEval(
+    '(def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) "\nnil)")))))'
+  );
 
   malEnvSet(coreEnv, "eval", {
     type: "function",
     value: (ast) => malEval(ast, coreEnv),
   });
 
-  rep(
-    '(def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) "\nnil)")))))'
-  )._unsafeUnwrap();
+  malEnvSet(
+    coreEnv,
+    "*ARGV*",
+    malList(process.argv.slice(3).map((arg) => malString(arg)))
+  );
+
+  if (process.argv.length > 2) {
+    mustEval(`(load-file ${printForm(malString(process.argv[2]))})`);
+    return;
+  }
 
   let rl = readline.createInterface(process.stdin, process.stdout);
   rl.setPrompt("user> ");

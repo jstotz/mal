@@ -63,10 +63,15 @@ export interface MalFunctionDefValue {
   function: MalFunction;
 }
 
-export type MalFunctionDef = {
+export interface MalFunctionDef {
   type: "function_def";
   value: MalFunctionDefValue;
-};
+}
+
+export interface MalAtomRef {
+  type: "atom_ref";
+  value: MalType;
+}
 
 export type MalType = MalList | MalAtom;
 export type MalAtom =
@@ -79,7 +84,8 @@ export type MalAtom =
   | MalNil
   | MalBoolean
   | MalHashMap
-  | MalVector;
+  | MalVector
+  | MalAtomRef;
 
 export function malNumber(value: number): MalNumber {
   return { type: "number", value };
@@ -109,6 +115,10 @@ export function malBoolean(value: boolean): MalBoolean {
 
 export function malString(value: string): MalString {
   return { type: "string", value };
+}
+
+export function malAtomRef(value: MalType): MalAtomRef {
+  return { type: "atom_ref", value };
 }
 
 export function malEqual(a: MalType, b: MalType): boolean {
