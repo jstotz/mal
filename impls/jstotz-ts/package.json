@@ -4,12 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "cd ../.. && make test^jstotz-ts"
+    "test": "cd ../.. && make test^jstotz-ts",
+    "lint": "eslint ./src"
   },
   "author": "Jay Stotz",
   "license": "ISC",
   "devDependencies": {
     "@types/readline-sync": "^1.4.3",
+    "@typescript-eslint/eslint-plugin": "^4.15.0",
+    "@typescript-eslint/parser": "^4.15.0",
+    "eslint": "^7.19.0",
     "prettier": "^2.2.1",
     "ts-node": "^9.1.1"
   },
