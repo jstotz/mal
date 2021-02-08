@@ -140,7 +140,7 @@ malDefCore("atom", (value) => ok(malAtomRef(value)));
 malDefCore("atom?", (value) => ok(malBoolean(value.type === "atom_ref")));
 malDefCore("deref", (atom) => malUnwrap("atom_ref", atom));
 malDefCore("reset!", (atom, value) =>
-  malUnwrap("atom_ref", atom).map((_) => {
+  malUnwrap("atom_ref", atom).map(() => {
     atom.value = value;
     return value;
   })
@@ -183,7 +183,7 @@ function malQuasiquote(ast: MalType): Result<MalType, MalError> {
       ) {
         result = malList([malSymbol("concat"), elt.value[1], result]);
       } else {
-        let quasiquoted = malQuasiquote(elt);
+        const quasiquoted = malQuasiquote(elt);
         if (quasiquoted.isErr()) return quasiquoted;
         result = malList([malSymbol("cons"), quasiquoted.value, result]);
       }

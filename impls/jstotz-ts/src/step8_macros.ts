@@ -46,7 +46,7 @@ function malEvalAst(ast: MalType, env: MalEnv): Result<MalType, MalError> {
       }));
     }
     case "symbol": {
-      let value = malEnvGet(env, ast.value);
+      const value = malEnvGet(env, ast.value);
       if (value === undefined) {
         return err({
           type: "symbol_not_found",
@@ -189,7 +189,7 @@ function malEval(ast: MalType, env: MalEnv): Result<MalType, MalError> {
     }
     state = result.value;
   };
-  while (true) {
+  for (;;) {
     const { ast, env, error } = state;
     if (error !== undefined) {
       return err(error);
@@ -198,10 +198,10 @@ function malEval(ast: MalType, env: MalEnv): Result<MalType, MalError> {
       return malEvalAst(ast, env);
     }
 
-    let elems = ast.value;
+    const elems = ast.value;
     if (elems.length === 0) return ok(ast);
     if (elems[0].type === "symbol") {
-      let [symbol, ...args] = elems;
+      const [symbol, ...args] = elems;
       switch (symbol.value) {
         case "def!":
           return malEvalDef(ast, env);
@@ -233,7 +233,7 @@ function malEval(ast: MalType, env: MalEnv): Result<MalType, MalError> {
       }
     }
     // apply
-    let evalResult = malEvalAst(ast, env);
+    const evalResult = malEvalAst(ast, env);
     if (evalResult.isErr()) return evalResult;
     const list = evalResult.value;
     if (list.type !== "list") {
@@ -303,7 +303,7 @@ function startRepl() {
     return;
   }
 
-  let rl = readline.createInterface(process.stdin, process.stdout);
+  const rl = readline.createInterface(process.stdin, process.stdout);
   rl.setPrompt("user> ");
   rl.on("line", (input) => {
     rep(input).match(

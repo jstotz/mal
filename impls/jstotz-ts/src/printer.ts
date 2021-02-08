@@ -41,9 +41,10 @@ export function printForm(form: MalType, readably = true): string {
       return "#<function*>";
     case "atom_ref":
       return `(atom ${printForm(form.value, readably)})`;
-    default:
+    default: {
       const unhandledForm: never = form;
       throw new Error(`Unhandled form type: ${unhandledForm}`);
+    }
   }
 }
 

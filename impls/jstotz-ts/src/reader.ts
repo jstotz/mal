@@ -11,12 +11,12 @@ import {
 
 type Token = string;
 
-const tokenRegexp = /[\s,]*(~@|[\[\]{}()'`~^@]|"(?:\\.|[^\\"])*"?|;.*|[^\s\[\]{}('"`,;)]*)/g;
+const tokenRegexp = /[\s,]*(~@|[[\]{}()'`~^@]|"(?:\\.|[^\\"])*"?|;.*|[^\s[\]{}('"`,;)]*)/g;
 
 type ReadResult<T extends MalType> = Result<T, MalError>;
 
 class Reader {
-  position: number = 0;
+  position = 0;
 
   constructor(private tokens: Token[]) {}
 
@@ -25,7 +25,7 @@ class Reader {
   }
 
   next(): string {
-    let token = this.peek();
+    const token = this.peek();
     this.position++;
     return token;
   }
@@ -39,11 +39,11 @@ function tokenize(input: string): Token[] {
 }
 
 export function readStr(input: string): ReadResult<MalType> {
-  let tokens = tokenize(input);
+  const tokens = tokenize(input);
   if (process.env.DEBUG) {
     console.debug("TOKENS: ", tokens);
   }
-  let reader = new Reader(tokens);
+  const reader = new Reader(tokens);
   return readForm(reader);
 }
 
@@ -53,8 +53,8 @@ function readSequence<T extends MalType>(
   endToken: Token,
   buildForm: (forms: MalType[]) => ReadResult<T>
 ): ReadResult<T> {
-  let forms: MalType[] = [];
-  let token = reader.next();
+  const forms: MalType[] = [];
+  const token = reader.next();
   if (token !== startToken) {
     return err({
       type: "unexpected_token",
@@ -62,8 +62,8 @@ function readSequence<T extends MalType>(
       token: token,
     });
   }
-  while (true) {
-    let token = reader.peek();
+  for (;;) {
+    const token = reader.peek();
     if (token === endToken) {
       reader.next();
       return buildForm(forms);
@@ -77,7 +77,7 @@ function readSequence<T extends MalType>(
     }
     // foo
 
-    let result = readForm(reader);
+    const result = readForm(reader);
     if (result.isErr()) {
       return err(result.error);
     }
@@ -86,7 +86,7 @@ function readSequence<T extends MalType>(
 }
 
 function parseStringLiteral(token: Token): ReadResult<MalString> {
-  let errorEof: MalError = {
+  const errorEof: MalError = {
     type: "unexpected_eof",
     message: 'Unexpected EOF while parsing string. Expected "',
   };
@@ -129,7 +129,7 @@ function parseStringLiteral(token: Token): ReadResult<MalString> {
 }
 
 function readAtom(reader: Reader): ReadResult<MalAtom> {
-  let token = reader.next();
+  const token = reader.next();
   if (token.match(/^-?\d+/)) {
     return ok({ type: "number", value: parseInt(token, 10) });
   } else if (token[0] === '"') {

@@ -79,7 +79,7 @@ function evalAst(ast: MalType, env: MalEnv): Result<MalType, MalError> {
         }));
     }
     case "symbol": {
-      let value = env.get(ast.value);
+      const value = env.get(ast.value);
       if (value === undefined) {
         return err({
           type: "symbol_not_found",
@@ -99,7 +99,7 @@ function evalMal(ast: MalType, env: MalEnv): Result<MalType, MalError> {
   }
 
   if (ast.value.length === 0) return ok(ast);
-  let evalResult = evalAst(ast, env);
+  const evalResult = evalAst(ast, env);
   if (evalResult.isErr()) return evalResult;
   const list = evalResult.value;
   if (list.type !== "list") {
@@ -128,7 +128,7 @@ function rep(input: string): Result<string, MalError> {
 }
 
 function startRepl() {
-  let rl = readline.createInterface(process.stdin, process.stdout);
+  const rl = readline.createInterface(process.stdin, process.stdout);
   rl.setPrompt("user> ");
   rl.on("line", (input) => {
     rep(input).match(

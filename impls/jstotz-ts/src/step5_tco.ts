@@ -2,20 +2,13 @@ import { combine, err, ok, Result } from "neverthrow";
 import readline from "readline";
 import coreEnv from "./core";
 import { MalEnv, malEnvGet, malEnvSet, malNewEnv } from "./env";
-import { MalError, malUnwrap, malUnwrapAll } from "./errors";
+import { MalError, malUnwrapAll } from "./errors";
 import { printForm } from "./printer";
 import { readStr } from "./reader";
 import { MalFunctionDef, malIsSeq, MalList, malNil, MalType } from "./types";
 
 function read(input: string) {
   return readStr(input);
-}
-
-function malCall(
-  malFn: MalType,
-  ...args: MalType[]
-): Result<MalType, MalError> {
-  return malUnwrap("function", malFn).andThen((fn) => fn(...args));
 }
 
 interface MalState {
@@ -45,7 +38,7 @@ function malEvalAst(ast: MalType, env: MalEnv): Result<MalType, MalError> {
       }));
     }
     case "symbol": {
-      let value = malEnvGet(env, ast.value);
+      const value = malEnvGet(env, ast.value);
       if (value === undefined) {
         return err({
           type: "symbol_not_found",
@@ -188,7 +181,7 @@ function malEval(ast: MalType, env: MalEnv): Result<MalType, MalError> {
     }
     state = result.value;
   };
-  while (true) {
+  for (;;) {
     const { ast, env, error } = state;
     if (error !== undefined) {
       return err(error);
@@ -216,7 +209,7 @@ function malEval(ast: MalType, env: MalEnv): Result<MalType, MalError> {
       }
     }
     // apply
-    let evalResult = malEvalAst(ast, env);
+    const evalResult = malEvalAst(ast, env);
     if (evalResult.isErr()) return evalResult;
     const list = evalResult.value;
     if (list.type !== "list") {
@@ -260,7 +253,7 @@ function rep(input: string): Result<string, MalError> {
 function startRepl() {
   rep("(def! not (fn* (a) (if a false true)))");
 
-  let rl = readline.createInterface(process.stdin, process.stdout);
+  const rl = readline.createInterface(process.stdin, process.stdout);
   rl.setPrompt("user> ");
   rl.on("line", (input) => {
     rep(input).match(

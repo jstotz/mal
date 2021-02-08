@@ -25,7 +25,7 @@ function rep(input: string): Result<string, MalError> {
 }
 
 function startRepl() {
-  let rl = readline.createInterface(process.stdin, process.stdout);
+  const rl = readline.createInterface(process.stdin, process.stdout);
   rl.setPrompt("user> ");
   rl.on("line", (input) => {
     rep(input).match(

@@ -17,10 +17,10 @@ function rep(input: string): string {
 }
 
 function startRepl() {
-  let rl = readline.createInterface(process.stdin, process.stdout);
+  const rl = readline.createInterface(process.stdin, process.stdout);
   rl.setPrompt("user> ");
   rl.on("line", (input) => {
-    let result = rep(input);
+    const result = rep(input);
     console.log(result);
     rl.prompt();
   });
