@@ -203,4 +203,29 @@ function malQuasiquote(ast: MalType): Result<MalType, MalError> {
 
 malDefCore("quasiquote", malQuasiquote);
 
+malDefCore("nth", (seq, index) =>
+  malUnwrapSeq(seq).andThen((elems) =>
+    malUnwrap("number", index).andThen((i) => {
+      if (i >= elems.length) {
+        return err({ type: "runtime_error", message: "index out of range" });
+      }
+      return ok(elems[i]);
+    })
+  )
+);
+
+malDefCore("first", (seq) => {
+  if (seq.type === "nil") {
+    return ok(malNil());
+  }
+  return malUnwrapSeq(seq).map((elems) => elems[0] ?? malNil());
+});
+
+malDefCore("rest", (seq) => {
+  if (seq.type === "nil") {
+    return ok(malList([]));
+  }
+  return malUnwrapSeq(seq).map((elems) => malList(elems.slice(1)));
+});
+
 export default coreEnv;

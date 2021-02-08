@@ -5,7 +5,14 @@ import { MalEnv, malEnvGet, malEnvSet, malNewEnv } from "./env";
 import { MalError, malUnwrap, malUnwrapAll } from "./errors";
 import { debugForm, printForm } from "./printer";
 import { readStr } from "./reader";
-import { MalFunction, malIsSeq, MalList, malNil, MalType } from "./types";
+import {
+  malFunction,
+  MalFunction,
+  malIsSeq,
+  MalList,
+  malNil,
+  MalType,
+} from "./types";
 
 function read(input: string) {
   return readStr(input);
@@ -155,13 +162,11 @@ function malEvalFn(
     });
   }
   return malUnwrapAll("symbol", bindings.value).andThen((bindingKeys) =>
-    ok({
-      type: "function",
-      value: (...args) => {
-        const env = malNewEnv(outerEnv, bindingKeys, args);
-        return malEval(body, env);
-      },
-    })
+    ok(
+      malFunction((...args) =>
+        malEval(body, malNewEnv(outerEnv, bindingKeys, args))
+      )
+    )
   );
 }
 

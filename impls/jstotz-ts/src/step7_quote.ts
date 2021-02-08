@@ -6,13 +6,14 @@ import { MalError, malUnwrapAll } from "./errors";
 import { printForm } from "./printer";
 import { readStr } from "./reader";
 import {
-    MalFunctionDef,
-    malIsSeq,
-    malList,
-    MalList,
-    malNil,
-    malString,
-    MalType
+  malFunction,
+  MalFunctionDef,
+  malIsSeq,
+  malList,
+  MalList,
+  malNil,
+  malString,
+  MalType,
 } from "./types";
 
 function read(input: string) {
@@ -168,13 +169,9 @@ function malEvalFnDef(
         body,
         env: outerEnv,
         paramNames: bindingKeys,
-        function: {
-          type: "function",
-          value: (...args) => {
-            const env = malNewEnv(outerEnv, bindingKeys, args);
-            return malEval(body, env);
-          },
-        },
+        function: malFunction((...args) =>
+          malEval(body, malNewEnv(outerEnv, bindingKeys, args))
+        ),
       },
     })
   );
@@ -287,10 +284,11 @@ function startRepl() {
     '(def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) "\nnil)")))))'
   );
 
-  malEnvSet(coreEnv, "eval", {
-    type: "function",
-    value: (ast) => malEval(ast, coreEnv),
-  });
+  malEnvSet(
+    coreEnv,
+    "eval",
+    malFunction((ast) => malEval(ast, coreEnv))
+  );
 
   malEnvSet(
     coreEnv,

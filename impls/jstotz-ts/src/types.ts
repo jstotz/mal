@@ -17,9 +17,9 @@ export interface MalString {
   value: string;
 }
 
-export interface MalList {
+export interface MalList<T = MalType[]> {
   type: "list";
-  value: MalType[];
+  value: T;
 }
 
 export interface MalKeyword {
@@ -54,6 +54,7 @@ export type MalFunctionValue = (
 export type MalFunction = {
   type: "function";
   value: MalFunctionValue;
+  isMacro: boolean;
 };
 
 export interface MalFunctionDefValue {
@@ -91,8 +92,11 @@ export function malNumber(value: number): MalNumber {
   return { type: "number", value };
 }
 
-export function malFunction(value: MalFunctionValue): MalFunction {
-  return { type: "function", value };
+export function malFunction(
+  value: MalFunctionValue,
+  { isMacro } = { isMacro: false }
+): MalFunction {
+  return { type: "function", value, isMacro };
 }
 
 export function malIsSeq(value: MalType): value is MalList | MalVector {
@@ -141,4 +145,12 @@ export function malEqual(a: MalType, b: MalType): boolean {
 
 export function malIsSymbolNamed(ast: MalType, name: string): boolean {
   return ast?.type === "symbol" && ast?.value === name;
+}
+
+export function malIsMacroFunction(
+  ast?: MalType
+): ast is MalFunction | MalFunctionDef {
+  return ast?.type === "function_def"
+    ? malIsMacroFunction(ast.value.function)
+    : ast?.type === "function" && ast.isMacro;
 }

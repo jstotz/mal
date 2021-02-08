@@ -6,7 +6,8 @@ export type MalError =
   | { message: string; type: "unexpected_eof" }
   | { message: string; type: "invalid_hash_map" }
   | { message: string; type: "symbol_not_found" }
-  | { message: string; type: "type_error" };
+  | { message: string; type: "type_error" }
+  | { message: string; type: "runtime_error" };
 
 export function malUnwrap<
   T extends MalType["type"],

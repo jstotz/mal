@@ -6,12 +6,15 @@ import { MalError, malUnwrapAll } from "./errors";
 import { printForm } from "./printer";
 import { readStr } from "./reader";
 import {
+  malFunction,
   MalFunctionDef,
+  malIsMacroFunction,
   malIsSeq,
   malList,
   MalList,
   malNil,
   malString,
+  MalSymbol,
   MalType,
 } from "./types";
 
@@ -71,6 +74,23 @@ function malEvalDef(list: MalList, env: MalEnv): Result<MalType, MalError> {
   return malEval(valueAst, env).andThen((evaled) =>
     ok(malEnvSet(env, keySymbol.value, evaled))
   );
+}
+
+function malEvalDefMacro(ast: MalList, env: MalEnv): Result<MalType, MalError> {
+  return malEvalDef(ast, env).andThen((fn) => {
+    if (fn.type === "function") {
+      fn.isMacro = true;
+      return ok(fn);
+    }
+    if (fn.type === "function_def") {
+      fn.value.function.isMacro = true;
+      return ok(fn);
+    }
+    return err({
+      type: "type_error",
+      message: "defmacro! expects a function arg",
+    });
+  });
 }
 
 function malEvalLet(
@@ -150,6 +170,26 @@ function malEvalIf(list: MalList, state: MalState): Result<MalState, MalError> {
   }
 }
 
+function malIsMacroCall(
+  ast: MalType,
+  env: MalEnv
+): ast is MalList<[MalSymbol, ...MalType[]]> {
+  if (ast.type !== "list") return false;
+  const first = ast.value[0];
+  if (first?.type !== "symbol") return false;
+  return malIsMacroFunction(malEnvGet(env, first.value));
+}
+
+function malMacroExpand(ast: MalType, env: MalEnv): Result<MalType, MalError> {
+  while (malIsMacroCall(ast, env)) {
+    const macroFn = malEnvGet(env, ast.value[0].value);
+    const result = malCallFunction(macroFn, ...ast.value.slice(1));
+    if (result.isErr()) return result;
+    ast = result.value;
+  }
+  return ok(ast);
+}
+
 function malEvalFnDef(
   list: MalList,
   outerEnv: MalEnv
@@ -168,13 +208,9 @@ function malEvalFnDef(
         body,
         env: outerEnv,
         paramNames: bindingKeys,
-        function: {
-          type: "function",
-          value: (...args) => {
-            const env = malNewEnv(outerEnv, bindingKeys, args);
-            return malEval(body, env);
-          },
-        },
+        function: malFunction((...args) =>
+          malEval(body, malNewEnv(outerEnv, bindingKeys, args))
+        ),
       },
     })
   );
@@ -190,10 +226,18 @@ function malEval(ast: MalType, env: MalEnv): Result<MalType, MalError> {
     state = result.value;
   };
   for (;;) {
-    const { ast, env, error } = state;
+    let { ast } = state;
+    const { env, error } = state;
     if (error !== undefined) {
       return err(error);
     }
+    if (ast.type !== "list") {
+      return malEvalAst(ast, env);
+    }
+
+    const macroExpandResult = malMacroExpand(ast, env);
+    if (macroExpandResult.isErr()) return macroExpandResult;
+    ast = macroExpandResult.value;
     if (ast.type !== "list") {
       return malEvalAst(ast, env);
     }
@@ -205,6 +249,10 @@ function malEval(ast: MalType, env: MalEnv): Result<MalType, MalError> {
       switch (symbol.value) {
         case "def!":
           return malEvalDef(ast, env);
+        case "defmacro!":
+          return malEvalDefMacro(ast, env);
+        case "macroexpand":
+          return malMacroExpand(args[0], env);
         case "let*":
           updateState(malEvalLet(ast, state));
           continue;
@@ -232,7 +280,7 @@ function malEval(ast: MalType, env: MalEnv): Result<MalType, MalError> {
           continue;
       }
     }
-    // apply
+
     const evalResult = malEvalAst(ast, env);
     if (evalResult.isErr()) return evalResult;
     const list = evalResult.value;
@@ -286,11 +334,15 @@ function startRepl() {
   mustEval(
     '(def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) "\nnil)")))))'
   );
+  mustEval(
+    "(defmacro! cond (fn* (& xs) (if (> (count xs) 0) (list 'if (first xs) (if (> (count xs) 1) (nth xs 1) (throw \"odd number of forms to cond\")) (cons 'cond (rest (rest xs)))))))"
+  );
 
-  malEnvSet(coreEnv, "eval", {
-    type: "function",
-    value: (ast) => malEval(ast, coreEnv),
-  });
+  malEnvSet(
+    coreEnv,
+    "eval",
+    malFunction((ast) => malEval(ast, coreEnv))
+  );
 
   malEnvSet(
     coreEnv,
