@@ -169,15 +169,11 @@ malDefCore("vec", (list) => {
 });
 
 function malQuasiquote(ast: MalType): Result<MalType, MalError> {
-  if (malIsSeq(ast) && malIsSymbolNamed(ast.value[0], "unquote")) {
+  if (ast.type === "list" && malIsSymbolNamed(ast.value[0], "unquote")) {
     return ok(ast.value[1]);
   }
 
-  if (ast.type === "vector") {
-    return malQuasiquote(malList([malSymbol("vec"), malList(ast.value)]));
-  }
-
-  if (ast.type === "list") {
+  if (malIsSeq(ast)) {
     let result = malList([]);
     for (let i = ast.value.length - 1; i >= 0; i--) {
       const elt = ast.value[i];
@@ -191,6 +187,9 @@ function malQuasiquote(ast: MalType): Result<MalType, MalError> {
         if (quasiquoted.isErr()) return quasiquoted;
         result = malList([malSymbol("cons"), quasiquoted.value, result]);
       }
+    }
+    if (ast.type === "vector") {
+      result = malList([malSymbol("vec"), result]);
     }
     return ok(result);
   }
