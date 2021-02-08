@@ -1,7 +1,13 @@
 import fs from "fs";
-import { ok, Result } from "neverthrow";
+import { err, ok, Result } from "neverthrow";
 import { MalEnv, malEnvSet, malNewEnv } from "./env";
-import { MalError, malUnwrap, malUnwrapAll, malUnwrapSeq } from "./errors";
+import {
+  MalError,
+  malUnwrap,
+  malUnwrapAll,
+  malUnwrapAllSeq,
+  malUnwrapSeq,
+} from "./errors";
 import { printForm } from "./printer";
 import { readStr } from "./reader";
 import {
@@ -10,11 +16,15 @@ import {
   malEqual,
   malFunction,
   MalFunctionValue,
+  malIsSeq,
+  malIsSymbolNamed,
   malList,
   malNil,
   malNumber,
   malString,
+  malSymbol,
   MalType,
+  malVector,
 } from "./types";
 
 const coreEnv: MalEnv = malNewEnv();
@@ -23,17 +33,18 @@ function malDefCore(name: string, fn: MalFunctionValue) {
   malEnvSet(coreEnv, name, malFunction(fn));
 }
 
-function malCallFunction(
-  fn: MalType,
+export function malCallFunction(
+  fn: MalType | undefined,
   ...args: MalType[]
 ): Result<MalType, MalError> {
-  switch (fn.type) {
+  switch (fn?.type) {
     case "function":
       return fn.value(...args);
     case "function_def":
       return fn.value.function.value(...args);
+    default:
+      return err({ type: "type_error", message: "Not a function" });
   }
-  return ok(malNil());
 }
 
 malDefCore("+", (...args) =>
@@ -142,5 +153,55 @@ malDefCore("swap!", (atom, fn, ...rest) =>
     })
   )
 );
+
+malDefCore("cons", (head, tail) =>
+  malUnwrapSeq(tail).map((tail) => malList([head].concat(tail)))
+);
+
+malDefCore("concat", (...lists) =>
+  malUnwrapAllSeq(lists).map((lists) => malList(lists.flatMap((el) => el)))
+);
+
+malDefCore("vec", (list) => {
+  console.log("vec args", list);
+  if (list.type === "vector") return ok(list);
+  return malUnwrap("list", list).map((list) => malVector(list));
+});
+
+function malQuasiquote(ast: MalType): Result<MalType, MalError> {
+  if (malIsSeq(ast) && malIsSymbolNamed(ast.value[0], "unquote")) {
+    return ok(ast.value[1]);
+  }
+
+  if (ast.type === "vector") {
+    return malQuasiquote(malList([malSymbol("vec"), malList(ast.value)]));
+  }
+
+  if (ast.type === "list") {
+    let result = malList([]);
+    for (let i = ast.value.length - 1; i >= 0; i--) {
+      const elt = ast.value[i];
+      if (
+        elt.type === "list" &&
+        malIsSymbolNamed(elt.value[0], "splice-unquote")
+      ) {
+        result = malList([malSymbol("concat"), elt.value[1], result]);
+      } else {
+        let quasiquoted = malQuasiquote(elt);
+        if (quasiquoted.isErr()) return quasiquoted;
+        result = malList([malSymbol("cons"), quasiquoted.value, result]);
+      }
+    }
+    return ok(result);
+  }
+
+  if (ast.type === "symbol" || ast.type === "hash_map") {
+    return ok(malList([malSymbol("quote"), ast]));
+  }
+
+  return ok(ast);
+}
+
+malDefCore("quasiquote", malQuasiquote);
 
 export default coreEnv;

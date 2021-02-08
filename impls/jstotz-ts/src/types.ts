@@ -109,12 +109,20 @@ export function malList(value: MalType[]): MalList {
   return { type: "list", value };
 }
 
+export function malVector(value: MalType[]): MalVector {
+  return { type: "vector", value };
+}
+
 export function malBoolean(value: boolean): MalBoolean {
   return { type: "boolean", value };
 }
 
 export function malString(value: string): MalString {
   return { type: "string", value };
+}
+
+export function malSymbol(value: string): MalSymbol {
+  return { type: "symbol", value };
 }
 
 export function malAtomRef(value: MalType): MalAtomRef {
@@ -129,4 +137,8 @@ export function malEqual(a: MalType, b: MalType): boolean {
     return a.value.every((element, i) => malEqual(element, b.value[i]));
   }
   return a.type === b.type && a.value === b.value;
+}
+
+export function malIsSymbolNamed(ast: MalType, name: string): boolean {
+  return ast?.type === "symbol" && ast?.value === name;
 }

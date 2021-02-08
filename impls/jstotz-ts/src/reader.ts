@@ -173,7 +173,7 @@ function buildHashMap(forms: MalType[]): ReadResult<MalHashMap> {
 }
 
 function readMacro(symbol: string, reader: Reader): ReadResult<MalList> {
-  reader.next(); // consume prefix
+  reader.next(); // consume macro symbol
   return readForm(reader).map((f) => ({
     type: "list",
     value: [{ type: "symbol", value: symbol }, f],

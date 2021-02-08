@@ -1,6 +1,6 @@
 import { combine, err, ok, Result } from "neverthrow";
 import readline from "readline";
-import coreEnv from "./core";
+import coreEnv, { malCallFunction } from "./core";
 import { MalEnv, malEnvGet, malEnvSet, malNewEnv } from "./env";
 import { MalError, malUnwrapAll } from "./errors";
 import { printForm } from "./printer";
@@ -198,9 +198,11 @@ function malEval(ast: MalType, env: MalEnv): Result<MalType, MalError> {
       return malEvalAst(ast, env);
     }
 
-    if (ast.value.length === 0) return ok(ast);
-    if (ast.value[0].type === "symbol") {
-      switch (ast.value[0].value) {
+    let elems = ast.value;
+    if (elems.length === 0) return ok(ast);
+    if (elems[0].type === "symbol") {
+      let [symbol, ...args] = elems;
+      switch (symbol.value) {
         case "def!":
           return malEvalDef(ast, env);
         case "let*":
@@ -214,6 +216,20 @@ function malEval(ast: MalType, env: MalEnv): Result<MalType, MalError> {
           continue;
         case "fn*":
           return malEvalFnDef(ast, env);
+        case "quote":
+          return ok(args[0]);
+        case "quasiquoteexpand":
+          return malCallFunction(malEnvGet(env, "quasiquote"), ast.value[1]);
+        case "quasiquote":
+          updateState(
+            malCallFunction(malEnvGet(env, "quasiquote"), ast.value[1]).map(
+              (ast) => ({
+                ...state,
+                ast,
+              })
+            )
+          );
+          continue;
       }
     }
     // apply

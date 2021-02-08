@@ -35,3 +35,7 @@ export function malUnwrapAll<
 >(type: T, ast: MalType[]): Result<Value[], MalError> {
   return combine(ast.map((v) => malUnwrap<T, Value>(type, v)));
 }
+
+export function malUnwrapAllSeq(ast: MalType[]): Result<MalType[][], MalError> {
+  return combine(ast.map((v) => malUnwrapSeq(v)));
+}
