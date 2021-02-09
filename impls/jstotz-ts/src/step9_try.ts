@@ -53,7 +53,7 @@ function malEvalAst(ast: MalType, env: MalEnv): Result<MalType, MalError> {
       if (value === undefined) {
         return err({
           type: "symbol_not_found",
-          message: `Symbol ${ast.value} not found`,
+          message: `'${ast.value}' not found`,
         });
       }
       return ok(value);
@@ -216,6 +216,31 @@ function malEvalFnDef(
   );
 }
 
+function malEvalTryCatch(
+  args: MalType[],
+  env: MalEnv
+): Result<MalType, MalError> {
+  {
+    const catchAst = args[1] as
+      | MalList<[MalSymbol, MalSymbol, MalType]>
+      | undefined;
+    return malEval(args[0], env).orElse((e) => {
+      if (catchAst === undefined) {
+        return err(e);
+      }
+      const [, errorBindingKey, catchBodyAst] = catchAst.value;
+      return malEval(
+        catchBodyAst,
+        malNewEnv(
+          env,
+          [errorBindingKey.value],
+          [e.type === "exception" ? e.data : malString(e.message)]
+        )
+      );
+    });
+  }
+}
+
 function malEval(ast: MalType, env: MalEnv): Result<MalType, MalError> {
   let state: MalState = { ast: ast, env: env };
   const updateState = (result: Result<MalState, MalError>) => {
@@ -256,6 +281,8 @@ function malEval(ast: MalType, env: MalEnv): Result<MalType, MalError> {
         case "let*":
           updateState(malEvalLet(ast, state));
           continue;
+        case "try*":
+          return malEvalTryCatch(args, env);
         case "do":
           updateState(malEvalDo(ast, state));
           continue;
@@ -362,7 +389,12 @@ function startRepl() {
       (output) => {
         console.log(output);
       },
-      (error) => console.log("\x1b[31mERROR: %s\x1b[0m", error.message)
+      (error) =>
+        console.log(
+          "\x1b[31mERROR: %s\x1b[0m",
+          error.message,
+          error.type === "exception" ? printForm(error.data) : ""
+        )
     );
     rl.prompt();
   });

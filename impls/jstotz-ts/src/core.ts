@@ -3,21 +3,24 @@ import { err, ok, Result } from "neverthrow";
 import { MalEnv, malEnvSet, malNewEnv } from "./env";
 import {
   MalError,
+  malException,
   malUnwrap,
   malUnwrapAll,
   malUnwrapAllSeq,
   malUnwrapSeq,
 } from "./errors";
 import { printForm } from "./printer";
-import { readStr } from "./reader";
+import { malBuildHashMap, readStr } from "./reader";
 import {
   malAtomRef,
   malBoolean,
   malEqual,
   malFunction,
   MalFunctionValue,
+  malHashMap,
   malIsSeq,
   malIsSymbolNamed,
+  malKeyword,
   malList,
   malNil,
   malNumber,
@@ -207,7 +210,7 @@ malDefCore("nth", (seq, index) =>
   malUnwrapSeq(seq).andThen((elems) =>
     malUnwrap("number", index).andThen((i) => {
       if (i >= elems.length) {
-        return err({ type: "runtime_error", message: "index out of range" });
+        return err(malException(malString("index out of range")));
       }
       return ok(elems[i]);
     })
@@ -226,6 +229,56 @@ malDefCore("rest", (seq) => {
     return ok(malList([]));
   }
   return malUnwrapSeq(seq).map((elems) => malList(elems.slice(1)));
+});
+
+malDefCore("throw", (error) => err(malException(error)));
+
+malDefCore("nil?", (arg) => ok(malBoolean(arg.type === "nil")));
+
+malDefCore("true?", (arg) =>
+  ok(malBoolean(arg.type === "boolean" && arg.value === true))
+);
+
+malDefCore("false?", (arg) =>
+  ok(malBoolean(arg.type === "boolean" && arg.value === false))
+);
+
+malDefCore("symbol?", (arg) => ok(malBoolean(arg.type === "symbol")));
+
+malDefCore("keyword?", (arg) => ok(malBoolean(arg.type === "keyword")));
+
+malDefCore("vector?", (arg) => ok(malBoolean(arg.type === "vector")));
+
+malDefCore("map?", (arg) => ok(malBoolean(arg.type === "hash_map")));
+
+malDefCore("sequential?", (arg) => ok(malBoolean(malIsSeq(arg))));
+
+malDefCore("symbol", (arg) =>
+  malUnwrap("string", arg).map((str) => malSymbol(str))
+);
+
+malDefCore("vector", (...args) => ok(malVector(args)));
+
+malDefCore("hash-map", (...args) => malBuildHashMap(args));
+
+malDefCore("assoc", (map, ...args) =>
+  malUnwrap("hash_map", map).andThen((origMap) =>
+    malBuildHashMap(args).map(({ value: newMap }) =>
+      malHashMap(
+        new Map<string, MalType>([
+          ...Array.from(origMap),
+          ...Array.from(newMap),
+        ])
+      )
+    )
+  )
+);
+
+malDefCore("keyword", (arg) => {
+  if (arg.type === "keyword") {
+    return ok(arg);
+  }
+  return malUnwrap("string", arg).map((str) => malKeyword(str));
 });
 
 export default coreEnv;

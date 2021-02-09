@@ -129,6 +129,14 @@ export function malSymbol(value: string): MalSymbol {
   return { type: "symbol", value };
 }
 
+export function malKeyword(value: string): MalKeyword {
+  return { type: "keyword", value };
+}
+
+export function malHashMap(value: Map<string, MalType>): MalHashMap {
+  return { type: "hash_map", value };
+}
+
 export function malAtomRef(value: MalType): MalAtomRef {
   return { type: "atom_ref", value };
 }

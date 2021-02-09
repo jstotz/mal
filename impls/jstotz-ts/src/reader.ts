@@ -147,7 +147,7 @@ function readAtom(reader: Reader): ReadResult<MalAtom> {
   }
 }
 
-function buildHashMap(forms: MalType[]): ReadResult<MalHashMap> {
+export function malBuildHashMap(forms: MalType[]): ReadResult<MalHashMap> {
   if (forms.length % 2 !== 0) {
     return err({
       type: "invalid_hash_map",
@@ -201,7 +201,7 @@ function readForm(reader: Reader): ReadResult<MalType> {
         ok({ type: "vector", value: forms })
       );
     case "{":
-      return readSequence<MalHashMap>(reader, "{", "}", buildHashMap);
+      return readSequence<MalHashMap>(reader, "{", "}", malBuildHashMap);
     case "'":
       return readMacro("quote", reader);
     case "`":

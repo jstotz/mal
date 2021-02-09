@@ -1,5 +1,5 @@
 import { combine, err, ok, Result } from "neverthrow";
-import { MalType } from "./types";
+import { malString, MalType } from "./types";
 
 export type MalError =
   | { message: string; type: "unexpected_token"; token: string }
@@ -7,7 +7,7 @@ export type MalError =
   | { message: string; type: "invalid_hash_map" }
   | { message: string; type: "symbol_not_found" }
   | { message: string; type: "type_error" }
-  | { message: string; type: "runtime_error" };
+  | { message: string; type: "exception"; data: MalType };
 
 export function malUnwrap<
   T extends MalType["type"],
@@ -39,4 +39,17 @@ export function malUnwrapAll<
 
 export function malUnwrapAllSeq(ast: MalType[]): Result<MalType[][], MalError> {
   return combine(ast.map((v) => malUnwrapSeq(v)));
+}
+
+export function malException(
+  data: MalType | string
+): Extract<MalError, { type: "exception" }> {
+  if (typeof data === "string") {
+    data = malString(data);
+  }
+  return {
+    type: "exception",
+    message: "Runtime exception",
+    data,
+  };
 }
