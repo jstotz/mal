@@ -2,9 +2,14 @@ import { err, ok, Result } from "neverthrow";
 import { MalError } from "./errors";
 import {
   MalAtom,
+  malBoolean,
   MalHashMap,
+  malKeyword,
   MalList,
+  malNil,
+  malNumber,
   MalString,
+  malSymbol,
   MalType,
   MalVector,
 } from "./types";
@@ -131,19 +136,19 @@ function parseStringLiteral(token: Token): ReadResult<MalString> {
 function readAtom(reader: Reader): ReadResult<MalAtom> {
   const token = reader.next();
   if (token.match(/^-?\d+/)) {
-    return ok({ type: "number", value: parseInt(token, 10) });
+    return ok(malNumber(parseInt(token, 10)));
   } else if (token[0] === '"') {
     return parseStringLiteral(token);
   } else if (token[0] === ":") {
-    return ok({ type: "keyword", value: token });
+    return ok(malKeyword(token.slice(1)));
   } else if (token === "true") {
-    return ok({ type: "boolean", value: true });
+    return ok(malBoolean(true));
   } else if (token === "false") {
-    return ok({ type: "boolean", value: false });
+    return ok(malBoolean(false));
   } else if (token === "nil") {
-    return ok({ type: "nil", value: null });
+    return ok(malNil());
   } else {
-    return ok({ type: "symbol", value: token });
+    return ok(malSymbol(token));
   }
 }
 

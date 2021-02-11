@@ -1,12 +1,4 @@
-import { MalKeyword, MalString, MalType } from "./types";
-
-function hashMapKeyToForm(value: string): MalString | MalKeyword {
-  if (value[0] === ":") {
-    return { type: "keyword", value: value };
-  } else {
-    return { type: "string", value: value };
-  }
-}
+import { malParseString, MalType } from "./types";
 
 export function printForm(form: MalType, readably = true): string {
   switch (form.type) {
@@ -18,7 +10,7 @@ export function printForm(form: MalType, readably = true): string {
       return `{${Array.from(form.value)
         .map(
           ([k, v]) =>
-            `${printForm(hashMapKeyToForm(k))} ${printForm(v, readably)}`
+            `${printForm(malParseString(k))} ${printForm(v, readably)}`
         )
         .join(" ")}}`;
     case "nil":
@@ -30,9 +22,10 @@ export function printForm(form: MalType, readably = true): string {
       } else {
         return form.value;
       }
+    case "keyword":
+      return `:${form.value.slice(1)}`;
     case "boolean":
     case "number":
-    case "keyword":
     case "symbol":
       return String(form.value);
     case "function":

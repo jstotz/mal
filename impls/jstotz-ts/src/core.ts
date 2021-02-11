@@ -1,20 +1,14 @@
 import fs from "fs";
-import { err, ok, Result } from "neverthrow";
+import { combine, err, ok, Result } from "neverthrow";
 import { MalEnv, malEnvSet, malNewEnv } from "./env";
-import {
-  MalError,
-  malException,
-  malUnwrap,
-  malUnwrapAll,
-  malUnwrapAllSeq,
-  malUnwrapSeq,
-} from "./errors";
+import { MalError } from "./errors";
 import { printForm } from "./printer";
 import { malBuildHashMap, readStr } from "./reader";
 import {
   malAtomRef,
   malBoolean,
   malEqual,
+  malException,
   malFunction,
   MalFunctionValue,
   malHashMap,
@@ -24,9 +18,15 @@ import {
   malList,
   malNil,
   malNumber,
+  malParseString,
   malString,
   malSymbol,
   MalType,
+  malUnwrap,
+  malUnwrapAll,
+  malUnwrapAllSeq,
+  malUnwrapHashMapKey,
+  malUnwrapSeq,
   malVector,
 } from "./types";
 
@@ -274,11 +274,72 @@ malDefCore("assoc", (map, ...args) =>
   )
 );
 
+malDefCore("dissoc", (map, ...keys) =>
+  malUnwrap("hash_map", map).andThen((map) =>
+    malUnwrapAll(["string", "keyword"], keys).andThen((keys) =>
+      ok(
+        malHashMap(
+          new Map(
+            Array.from(map.entries()).filter(([key]) => !keys.includes(key))
+          )
+        )
+      )
+    )
+  )
+);
+
 malDefCore("keyword", (arg) => {
   if (arg.type === "keyword") {
     return ok(arg);
   }
   return malUnwrap("string", arg).map((str) => malKeyword(str));
+});
+
+malDefCore("get", (...args) =>
+  combine([
+    malUnwrap(["hash_map", "nil"], args[0]),
+    malUnwrapHashMapKey(args[1]),
+  ] as const).map(([map, key]) => map?.get(key) ?? malNil())
+);
+
+malDefCore("contains?", (aMap, aKey) =>
+  combine([
+    malUnwrap("hash_map", aMap),
+    malUnwrapHashMapKey(aKey),
+  ] as const).map(([map, key]) => malBoolean(map.has(key)) ?? malNil())
+);
+
+malDefCore("keys", (aMap) =>
+  malUnwrap("hash_map", aMap).map((map) =>
+    malList(Array.from(map.keys()).map((key) => malParseString(key)))
+  )
+);
+
+malDefCore("vals", (aMap) =>
+  malUnwrap("hash_map", aMap).map((map) => malList(Array.from(map.values())))
+);
+
+malDefCore("apply", (aFn, ...aArgs) =>
+  malCallFunction(
+    aFn,
+    ...aArgs.flatMap((arg) => (malIsSeq(arg) ? arg.value : arg))
+  )
+);
+
+malDefCore("map", (aFn, aSeq) =>
+  malUnwrapSeq(aSeq).andThen((elems) => {
+    const returnElems: MalType[] = [];
+    for (const elem of elems) {
+      const result = malCallFunction(aFn, elem);
+      if (result.isErr()) return result;
+      returnElems.push(result.value);
+    }
+    return ok(malList(returnElems));
+  })
+);
+
+malDefCore("type-of", (aValue) => {
+  return ok(malString(aValue.type));
 });
 
 export default coreEnv;

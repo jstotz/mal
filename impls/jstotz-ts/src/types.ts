@@ -1,7 +1,8 @@
-import { Result } from "neverthrow";
+import { combine, err, ok, Result } from "neverthrow";
 import { MalEnv } from "./env";
 import { MalError } from "./errors";
 
+export const MAL_KEYWORD_PREFIX = "ʞ";
 export interface MalNumber {
   type: "number";
   value: number;
@@ -130,7 +131,11 @@ export function malSymbol(value: string): MalSymbol {
 }
 
 export function malKeyword(value: string): MalKeyword {
-  return { type: "keyword", value };
+  return {
+    type: "keyword",
+    value:
+      value[0] === MAL_KEYWORD_PREFIX ? value : `${MAL_KEYWORD_PREFIX}${value}`,
+  };
 }
 
 export function malHashMap(value: Map<string, MalType>): MalHashMap {
@@ -141,12 +146,28 @@ export function malAtomRef(value: MalType): MalAtomRef {
   return { type: "atom_ref", value };
 }
 
+export function malParseString(value: string): MalString | MalKeyword {
+  const type = value[0] === MAL_KEYWORD_PREFIX ? "keyword" : "string";
+  return { type, value };
+}
+
+export function malHashMapEntries(value: MalHashMap): MalList {
+  return malList(
+    Array.from(value.value.entries())
+      .sort()
+      .map(([k, v]) => malList([malParseString(k), v]))
+  );
+}
+
 export function malEqual(a: MalType, b: MalType): boolean {
   if (malIsSeq(a) && malIsSeq(b)) {
     if (a.value.length !== b.value.length) {
       return false;
     }
     return a.value.every((element, i) => malEqual(element, b.value[i]));
+  }
+  if (a.type === "hash_map" && b.type === "hash_map") {
+    return malEqual(malHashMapEntries(a), malHashMapEntries(b));
   }
   return a.type === b.type && a.value === b.value;
 }
@@ -161,4 +182,61 @@ export function malIsMacroFunction(
   return ast?.type === "function_def"
     ? malIsMacroFunction(ast.value.function)
     : ast?.type === "function" && ast.isMacro;
+}
+
+export function malTypeIsOneOf(
+  types: MalType["type"] | MalType["type"][],
+  ast: MalType
+): boolean {
+  return Array.isArray(types)
+    ? types.some((t) => t === ast.type)
+    : ast.type === types;
+}
+
+export function malStringIsKeyword(str: string): boolean {
+  return str[0] === MAL_KEYWORD_PREFIX;
+}
+
+export function malUnwrap<
+  T extends MalType["type"],
+  Value = Extract<MalType, { type: T }>["value"]
+>(type: T | T[], ast: MalType): Result<Value, MalError> {
+  return malTypeIsOneOf(type, ast)
+    ? ok((ast.value as unknown) as Value)
+    : err({
+        type: "type_error",
+        message: `Expected type ${[type].flat().join(" | ")}, got ${ast.type}`,
+      });
+}
+
+export function malUnwrapSeq(ast: MalType): Result<MalType[], MalError> {
+  return malUnwrap(["list", "vector"], ast);
+}
+
+export function malUnwrapHashMapKey(ast: MalType): Result<string, MalError> {
+  return malUnwrap(["string", "keyword"], ast);
+}
+
+export function malUnwrapAll<
+  T extends MalType["type"],
+  Value = Extract<MalType, { type: T }>["value"]
+>(type: T | T[], ast: MalType[]): Result<Value[], MalError> {
+  return combine(ast.map((v) => malUnwrap<T, Value>(type, v)));
+}
+
+export function malUnwrapAllSeq(ast: MalType[]): Result<MalType[][], MalError> {
+  return combine(ast.map((v) => malUnwrapSeq(v)));
+}
+
+export function malException(
+  data: MalType | string
+): Extract<MalError, { type: "exception" }> {
+  if (typeof data === "string") {
+    data = malString(data);
+  }
+  return {
+    type: "exception",
+    message: "Runtime exception",
+    data,
+  };
 }
