@@ -1,5 +1,6 @@
 import fs from "fs";
 import { combine, err, ok, Result } from "neverthrow";
+import readlineSync from "readline-sync";
 import { MalEnv, malEnvSet, malNewEnv } from "./env";
 import { MalError } from "./errors";
 import { printForm } from "./printer";
@@ -338,8 +339,12 @@ malDefCore("map", (aFn, aSeq) =>
   })
 );
 
-malDefCore("type-of", (aValue) => {
-  return ok(malString(aValue.type));
-});
+malDefCore("type-of", (aValue) => ok(malString(aValue.type)));
+
+malDefCore("readline", (aPrompt) =>
+  malUnwrap("string", aPrompt).andThen((prompt) => {
+    return ok(malString(readlineSync.question(prompt)));
+  })
+);
 
 export default coreEnv;
