@@ -131,8 +131,11 @@ export function malNil(): MalNil {
   return MAL_NIL;
 }
 
-export function malList(value: MalType[]): MalList {
-  return { type: "list", value };
+export function malList(value: MalList | MalVector | MalType[]): MalList {
+  if (Array.isArray(value)) {
+    return { type: "list", value };
+  }
+  return value.type === "list" ? value : malList(value.value);
 }
 
 export function malVector(value: MalType[]): MalVector {

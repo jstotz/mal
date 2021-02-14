@@ -25,6 +25,7 @@ import {
   malString,
   malSymbol,
   MalType,
+  malTypeIsOneOf,
   malUnwrap,
   malUnwrapAll,
   malUnwrapAllSeq,
@@ -360,20 +361,42 @@ defFn("readline", (aPrompt) =>
   })
 );
 
-defFn("time-ms", () => {
-  throw "not implemented";
-});
+defFn("time-ms", () => ok(malNumber(Date.now())));
 
 defFn("meta", (value) => ok(value.metadata ?? malNil()));
 
 defFn("with-meta", (value, metadata) => ok({ ...value, metadata }));
 
-defFn("seq", () => {
-  throw "not implemented";
+defFn("seq", (seq) => {
+  if (seq.type === "nil") {
+    return ok(seq);
+  }
+
+  if (!malTypeIsOneOf(["list", "vector", "string"], seq)) {
+    return err({
+      type: "type_error",
+      message: `Unable to convert type ${seq.type} to sequence`,
+    });
+  }
+
+  const list = malList(
+    seq.type === "string" ? [...seq.value].map((chr) => malString(chr)) : seq
+  );
+
+  return ok(list.value.length === 0 ? malNil() : list);
 });
 
-defFn("conj", () => {
-  throw "not implemented";
+defFn("conj", (seq, ...newElems) => {
+  if (!malIsSeq(seq)) {
+    return err({ type: "type_error", message: "Expected a sequence" });
+  }
+  return ok({
+    ...seq,
+    value:
+      seq.type === "vector"
+        ? seq.value.concat(newElems)
+        : [...newElems].reverse().concat(seq.value),
+  });
 });
 
 export default coreEnv;
