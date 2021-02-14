@@ -364,13 +364,9 @@ defFn("time-ms", () => {
   throw "not implemented";
 });
 
-defFn("meta", () => {
-  throw "not implemented";
-});
+defFn("meta", (value) => ok(value.metadata ?? malNil()));
 
-defFn("with-meta", () => {
-  throw "not implemented";
-});
+defFn("with-meta", (value, metadata) => ok({ ...value, metadata }));
 
 defFn("seq", () => {
   throw "not implemented";

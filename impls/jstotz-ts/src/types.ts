@@ -3,47 +3,52 @@ import { MalEnv } from "./env";
 import { MalError } from "./errors";
 
 export const MAL_KEYWORD_PREFIX = "ʞ";
-export interface MalNumber {
+
+interface MalBaseType {
+  metadata?: MalType;
+}
+
+export interface MalNumber extends MalBaseType {
   type: "number";
   value: number;
 }
 
-export interface MalSymbol {
+export interface MalSymbol extends MalBaseType {
   type: "symbol";
   value: string;
 }
 
-export interface MalString {
+export interface MalString extends MalBaseType {
   type: "string";
   value: string;
 }
 
-export interface MalList<T = MalType[]> {
+export interface MalList<T = MalType[]> extends MalBaseType {
   type: "list";
   value: T;
 }
 
-export interface MalKeyword {
+export interface MalKeyword extends MalBaseType {
   type: "keyword";
   value: string;
 }
 
-export interface MalNil {
+export interface MalNil extends MalBaseType {
   type: "nil";
   value: null;
 }
 
-export interface MalBoolean {
+export interface MalBoolean extends MalBaseType {
   type: "boolean";
   value: boolean;
 }
 
-export interface MalHashMap {
+export interface MalHashMap extends MalBaseType {
   type: "hash_map";
   value: Map<string, MalType>;
 }
 
-export interface MalVector {
+export interface MalVector extends MalBaseType {
   type: "vector";
   value: MalType[];
 }
@@ -52,11 +57,11 @@ export type MalFunctionValue = (
   ...args: MalType[]
 ) => Result<MalType, MalError>;
 
-export type MalFunction = {
+export interface MalFunction extends MalBaseType {
   type: "function";
   value: MalFunctionValue;
   isMacro: boolean;
-};
+}
 
 export interface MalFunctionDefValue {
   body: MalType;
@@ -65,12 +70,12 @@ export interface MalFunctionDefValue {
   function: MalFunction;
 }
 
-export interface MalFunctionDef {
+export interface MalFunctionDef extends MalBaseType {
   type: "function_def";
   value: MalFunctionDefValue;
 }
 
-export interface MalAtomRef {
+export interface MalAtomRef extends MalBaseType {
   type: "atom_ref";
   value: MalType;
 }
