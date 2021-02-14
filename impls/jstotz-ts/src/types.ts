@@ -198,10 +198,10 @@ export function malIsFunction(
   );
 }
 
-export function malTypeIsOneOf(
-  types: MalType["type"] | MalType["type"][],
-  ast?: MalType
-): boolean {
+export function malTypeIsOneOf<T extends MalType["type"]>(
+  types: T | T[],
+  ast: MalType | undefined
+): ast is Extract<MalType, { type: T }> {
   if (ast === undefined) return false;
   return Array.isArray(types)
     ? types.some((t) => t === ast.type)
