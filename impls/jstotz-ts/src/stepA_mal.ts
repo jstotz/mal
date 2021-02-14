@@ -8,10 +8,12 @@ import { readline } from "./readline";
 import {
   malFunction,
   MalFunctionDef,
+  malIsFunction,
   malIsMacroFunction,
   malIsSeq,
   malList,
   MalList,
+  malMacro,
   malNil,
   malString,
   MalSymbol,
@@ -72,24 +74,32 @@ function malEvalDef(list: MalList, env: MalEnv): Result<MalType, MalError> {
     return err({ type: "type_error", message: "Expected value in def!" });
   }
   return malEval(valueAst, env).andThen((evaled) =>
-    ok(malEnvSet(env, keySymbol.value, evaled))
+    ok(malEnvSet(env, keySymbol, evaled))
   );
 }
 
-function malEvalDefMacro(ast: MalList, env: MalEnv): Result<MalType, MalError> {
-  return malEvalDef(ast, env).andThen((fn) => {
-    if (fn.type === "function") {
-      fn.isMacro = true;
-      return ok(fn);
-    }
-    if (fn.type === "function_def") {
-      fn.value.function.isMacro = true;
-      return ok(fn);
-    }
+function malEvalDefMacro(
+  list: MalList,
+  env: MalEnv
+): Result<MalType, MalError> {
+  const [, keySymbol, valueAst] = list.value;
+  if (keySymbol?.type !== "symbol") {
     return err({
       type: "type_error",
-      message: "defmacro! expects a function arg",
+      message: "Expected symbol key in defmacro!",
     });
+  }
+  if (valueAst === undefined) {
+    return err({ type: "type_error", message: "Expected value in defmacro!" });
+  }
+  return malEval(valueAst, env).andThen((fn) => {
+    if (!malIsFunction(fn)) {
+      return err({
+        type: "type_error",
+        message: "defmacro! expects a function arg",
+      });
+    }
+    return ok(malEnvSet(env, keySymbol, malMacro(fn)));
   });
 }
 

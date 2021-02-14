@@ -105,6 +105,22 @@ export function malFunction(
   return { type: "function", value, isMacro };
 }
 
+export function malMacro(
+  value: MalFunction | MalFunctionDef
+): MalFunction | MalFunctionDef {
+  if (value.type === "function_def") {
+    return {
+      ...value,
+      value: {
+        ...value.value,
+        function: { ...value.value.function, isMacro: true },
+      },
+    };
+  } else {
+    return { ...value, isMacro: true };
+  }
+}
+
 export function malIsSeq(value: MalType): value is MalList | MalVector {
   return value.type === "list" || value.type === "vector";
 }

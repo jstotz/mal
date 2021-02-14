@@ -1,4 +1,4 @@
-import { malList, malNil, MalType } from "./types";
+import { malList, malNil, MalSymbol, MalType } from "./types";
 
 export interface MalEnv {
   data: Map<string, MalType>;
@@ -23,8 +23,12 @@ export function malNewEnv(
   return env;
 }
 
-export function malEnvSet(env: MalEnv, key: string, value: MalType): MalType {
-  env.data.set(key, value);
+export function malEnvSet(
+  env: MalEnv,
+  key: string | MalSymbol,
+  value: MalType
+): MalType {
+  env.data.set(typeof key === "string" ? key : key.value, value);
   return value;
 }
 
