@@ -192,7 +192,10 @@ export function malIsMacroFunction(
 export function malIsFunction(
   ast?: MalType
 ): ast is MalFunction | MalFunctionDef {
-  return malTypeIsOneOf(["function", "function_def"], ast);
+  return (
+    malTypeIsOneOf(["function", "function_def"], ast) &&
+    !malIsMacroFunction(ast)
+  );
 }
 
 export function malTypeIsOneOf(
