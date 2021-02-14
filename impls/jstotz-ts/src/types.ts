@@ -184,10 +184,17 @@ export function malIsMacroFunction(
     : ast?.type === "function" && ast.isMacro;
 }
 
+export function malIsFunction(
+  ast?: MalType
+): ast is MalFunction | MalFunctionDef {
+  return malTypeIsOneOf(["function", "function_def"], ast);
+}
+
 export function malTypeIsOneOf(
   types: MalType["type"] | MalType["type"][],
-  ast: MalType
+  ast?: MalType
 ): boolean {
+  if (ast === undefined) return false;
   return Array.isArray(types)
     ? types.some((t) => t === ast.type)
     : ast.type === types;

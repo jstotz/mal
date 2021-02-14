@@ -1,10 +1,10 @@
 import fs from "fs";
 import { combine, err, ok, Result } from "neverthrow";
-import readlineSync from "readline-sync";
 import { MalEnv, malEnvSet, malNewEnv } from "./env";
 import { MalError } from "./errors";
 import { printForm } from "./printer";
 import { malBuildHashMap, readStr } from "./reader";
+import { readline } from "./readline";
 import {
   malAtomRef,
   malBoolean,
@@ -13,6 +13,8 @@ import {
   malFunction,
   MalFunctionValue,
   malHashMap,
+  malIsFunction,
+  malIsMacroFunction,
   malIsSeq,
   malIsSymbolNamed,
   malKeyword,
@@ -33,8 +35,12 @@ import {
 
 const coreEnv: MalEnv = malNewEnv();
 
-function malDefCore(name: string, fn: MalFunctionValue) {
-  malEnvSet(coreEnv, name, malFunction(fn));
+function def(name: string, value: MalType) {
+  malEnvSet(coreEnv, name, value);
+}
+
+function defFn(name: string, fn: MalFunctionValue) {
+  def(name, malFunction(fn));
 }
 
 export function malCallFunction(
@@ -51,105 +57,105 @@ export function malCallFunction(
   }
 }
 
-malDefCore("+", (...args) =>
+def("*host-language*", malString("jstotz-ts"));
+
+defFn("+", (...args) =>
   malUnwrapAll("number", args).map((numbers) =>
     malNumber(numbers.reduce((a, b) => a + b))
   )
 );
 
-malDefCore("-", (...args) =>
+defFn("-", (...args) =>
   malUnwrapAll("number", args).map((numbers) =>
     malNumber(numbers.reduce((a, b) => a - b))
   )
 );
 
-malDefCore("*", (...args) =>
+defFn("*", (...args) =>
   malUnwrapAll("number", args).map((numbers) =>
     malNumber(numbers.reduce((a, b) => a * b))
   )
 );
 
-malDefCore("/", (...args) =>
+defFn("/", (...args) =>
   malUnwrapAll("number", args).map((numbers) =>
     malNumber(numbers.reduce((a, b) => a / b))
   )
 );
 
-malDefCore("prn", (form) => {
+defFn("prn", (form) => {
   if (form !== undefined) {
     console.log(printForm(form));
   }
   return ok(malNil());
 });
 
-malDefCore("list", (...forms) => ok(malList(forms)));
+defFn("list", (...forms) => ok(malList(forms)));
 
-malDefCore("list?", (form) => ok(malBoolean(form?.type === "list")));
+defFn("list?", (form) => ok(malBoolean(form?.type === "list")));
 
-malDefCore("empty?", (form) =>
+defFn("empty?", (form) =>
   malUnwrapSeq(form).map((value) => malBoolean(value.length === 0))
 );
 
-malDefCore("count", (form) =>
-  ok(malNumber(malUnwrapSeq(form).unwrapOr([]).length))
-);
+defFn("count", (form) => ok(malNumber(malUnwrapSeq(form).unwrapOr([]).length)));
 
-malDefCore("=", (a, b) => ok(malBoolean(malEqual(a, b))));
+defFn("=", (a, b) => ok(malBoolean(malEqual(a, b))));
 
-malDefCore(">", (...args) =>
+defFn(">", (...args) =>
   malUnwrapAll("number", args).map(([a, b]) => malBoolean(a > b))
 );
 
-malDefCore(">=", (...args) =>
+defFn(">=", (...args) =>
   malUnwrapAll("number", args).map(([a, b]) => malBoolean(a >= b))
 );
 
-malDefCore("<", (...args) =>
+defFn("<", (...args) =>
   malUnwrapAll("number", args).map(([a, b]) => malBoolean(a < b))
 );
 
-malDefCore("<=", (...args) =>
+defFn("<=", (...args) =>
   malUnwrapAll("number", args).map(([a, b]) => malBoolean(a <= b))
 );
 
-malDefCore("pr-str", (...args) =>
+defFn("pr-str", (...args) =>
   ok(malString(args.map((f) => printForm(f)).join(" ")))
 );
 
-malDefCore("str", (...args) =>
+defFn("str", (...args) =>
   ok(malString(args.map((f) => printForm(f, false)).join("")))
 );
 
-malDefCore("prn", (...args) => {
+defFn("prn", (...args) => {
   console.log(...args.map((f) => printForm(f)));
   return ok(malNil());
 });
 
-malDefCore("println", (...args) => {
+defFn("println", (...args) => {
   console.log(...args.map((f) => printForm(f, false)));
   return ok(malNil());
 });
 
-malDefCore("read-string", (str) =>
+defFn("read-string", (str) =>
   malUnwrap("string", str).andThen((str) => readStr(str))
 );
 
-malDefCore("slurp", (fileName) =>
+defFn("slurp", (fileName) =>
   malUnwrap("string", fileName).andThen((fileName) =>
     ok(malString(fs.readFileSync(fileName).toString()))
   )
 );
 
-malDefCore("atom", (value) => ok(malAtomRef(value)));
-malDefCore("atom?", (value) => ok(malBoolean(value.type === "atom_ref")));
-malDefCore("deref", (atom) => malUnwrap("atom_ref", atom));
-malDefCore("reset!", (atom, value) =>
+defFn("atom", (value) => ok(malAtomRef(value)));
+defFn("atom?", (value) => ok(malBoolean(value.type === "atom_ref")));
+defFn("deref", (atom) => malUnwrap("atom_ref", atom));
+defFn("reset!", (atom, value) =>
   malUnwrap("atom_ref", atom).map(() => {
     atom.value = value;
     return value;
   })
 );
-malDefCore("swap!", (atom, fn, ...rest) =>
+defFn("swap!", (atom, fn, ...rest) =>
   malUnwrap("atom_ref", atom).andThen((prevValue) =>
     malCallFunction(fn, prevValue, ...rest).map((newValue) => {
       atom.value = newValue;
@@ -158,15 +164,15 @@ malDefCore("swap!", (atom, fn, ...rest) =>
   )
 );
 
-malDefCore("cons", (head, tail) =>
+defFn("cons", (head, tail) =>
   malUnwrapSeq(tail).map((tail) => malList([head].concat(tail)))
 );
 
-malDefCore("concat", (...lists) =>
+defFn("concat", (...lists) =>
   malUnwrapAllSeq(lists).map((lists) => malList(lists.flatMap((el) => el)))
 );
 
-malDefCore("vec", (list) => {
+defFn("vec", (list) => {
   console.log("vec args", list);
   if (list.type === "vector") return ok(list);
   return malUnwrap("list", list).map((list) => malVector(list));
@@ -205,9 +211,9 @@ function malQuasiquote(ast: MalType): Result<MalType, MalError> {
   return ok(ast);
 }
 
-malDefCore("quasiquote", malQuasiquote);
+defFn("quasiquote", malQuasiquote);
 
-malDefCore("nth", (seq, index) =>
+defFn("nth", (seq, index) =>
   malUnwrapSeq(seq).andThen((elems) =>
     malUnwrap("number", index).andThen((i) => {
       if (i >= elems.length) {
@@ -218,51 +224,57 @@ malDefCore("nth", (seq, index) =>
   )
 );
 
-malDefCore("first", (seq) => {
+defFn("first", (seq) => {
   if (seq.type === "nil") {
     return ok(malNil());
   }
   return malUnwrapSeq(seq).map((elems) => elems[0] ?? malNil());
 });
 
-malDefCore("rest", (seq) => {
+defFn("rest", (seq) => {
   if (seq.type === "nil") {
     return ok(malList([]));
   }
   return malUnwrapSeq(seq).map((elems) => malList(elems.slice(1)));
 });
 
-malDefCore("throw", (error) => err(malException(error)));
+defFn("throw", (error) => err(malException(error)));
 
-malDefCore("nil?", (arg) => ok(malBoolean(arg.type === "nil")));
+defFn("nil?", (arg) => ok(malBoolean(arg.type === "nil")));
 
-malDefCore("true?", (arg) =>
+defFn("true?", (arg) =>
   ok(malBoolean(arg.type === "boolean" && arg.value === true))
 );
 
-malDefCore("false?", (arg) =>
+defFn("false?", (arg) =>
   ok(malBoolean(arg.type === "boolean" && arg.value === false))
 );
 
-malDefCore("symbol?", (arg) => ok(malBoolean(arg.type === "symbol")));
+defFn("symbol?", (arg) => ok(malBoolean(arg.type === "symbol")));
 
-malDefCore("keyword?", (arg) => ok(malBoolean(arg.type === "keyword")));
+defFn("keyword?", (arg) => ok(malBoolean(arg.type === "keyword")));
 
-malDefCore("vector?", (arg) => ok(malBoolean(arg.type === "vector")));
+defFn("vector?", (arg) => ok(malBoolean(arg.type === "vector")));
 
-malDefCore("map?", (arg) => ok(malBoolean(arg.type === "hash_map")));
+defFn("map?", (arg) => ok(malBoolean(arg.type === "hash_map")));
 
-malDefCore("sequential?", (arg) => ok(malBoolean(malIsSeq(arg))));
+defFn("sequential?", (arg) => ok(malBoolean(malIsSeq(arg))));
 
-malDefCore("symbol", (arg) =>
-  malUnwrap("string", arg).map((str) => malSymbol(str))
-);
+defFn("string?", (arg) => ok(malBoolean(arg.type === "string")));
 
-malDefCore("vector", (...args) => ok(malVector(args)));
+defFn("macro?", (arg) => ok(malBoolean(malIsMacroFunction(arg))));
 
-malDefCore("hash-map", (...args) => malBuildHashMap(args));
+defFn("number?", (arg) => ok(malBoolean(arg.type === "number")));
 
-malDefCore("assoc", (map, ...args) =>
+defFn("fn?", (arg) => ok(malBoolean(malIsFunction(arg))));
+
+defFn("symbol", (arg) => malUnwrap("string", arg).map((str) => malSymbol(str)));
+
+defFn("vector", (...args) => ok(malVector(args)));
+
+defFn("hash-map", (...args) => malBuildHashMap(args));
+
+defFn("assoc", (map, ...args) =>
   malUnwrap("hash_map", map).andThen((origMap) =>
     malBuildHashMap(args).map(({ value: newMap }) =>
       malHashMap(
@@ -275,7 +287,7 @@ malDefCore("assoc", (map, ...args) =>
   )
 );
 
-malDefCore("dissoc", (map, ...keys) =>
+defFn("dissoc", (map, ...keys) =>
   malUnwrap("hash_map", map).andThen((map) =>
     malUnwrapAll(["string", "keyword"], keys).andThen((keys) =>
       ok(
@@ -289,45 +301,45 @@ malDefCore("dissoc", (map, ...keys) =>
   )
 );
 
-malDefCore("keyword", (arg) => {
+defFn("keyword", (arg) => {
   if (arg.type === "keyword") {
     return ok(arg);
   }
   return malUnwrap("string", arg).map((str) => malKeyword(str));
 });
 
-malDefCore("get", (...args) =>
+defFn("get", (...args) =>
   combine([
     malUnwrap(["hash_map", "nil"], args[0]),
     malUnwrapHashMapKey(args[1]),
   ] as const).map(([map, key]) => map?.get(key) ?? malNil())
 );
 
-malDefCore("contains?", (aMap, aKey) =>
+defFn("contains?", (aMap, aKey) =>
   combine([
     malUnwrap("hash_map", aMap),
     malUnwrapHashMapKey(aKey),
   ] as const).map(([map, key]) => malBoolean(map.has(key)) ?? malNil())
 );
 
-malDefCore("keys", (aMap) =>
+defFn("keys", (aMap) =>
   malUnwrap("hash_map", aMap).map((map) =>
     malList(Array.from(map.keys()).map((key) => malParseString(key)))
   )
 );
 
-malDefCore("vals", (aMap) =>
+defFn("vals", (aMap) =>
   malUnwrap("hash_map", aMap).map((map) => malList(Array.from(map.values())))
 );
 
-malDefCore("apply", (aFn, ...aArgs) =>
+defFn("apply", (aFn, ...aArgs) =>
   malCallFunction(
     aFn,
     ...aArgs.flatMap((arg) => (malIsSeq(arg) ? arg.value : arg))
   )
 );
 
-malDefCore("map", (aFn, aSeq) =>
+defFn("map", (aFn, aSeq) =>
   malUnwrapSeq(aSeq).andThen((elems) => {
     const returnElems: MalType[] = [];
     for (const elem of elems) {
@@ -339,12 +351,33 @@ malDefCore("map", (aFn, aSeq) =>
   })
 );
 
-malDefCore("type-of", (aValue) => ok(malString(aValue.type)));
+defFn("type-of", (aValue) => ok(malString(aValue.type)));
 
-malDefCore("readline", (aPrompt) =>
+defFn("readline", (aPrompt) =>
   malUnwrap("string", aPrompt).andThen((prompt) => {
-    return ok(malString(readlineSync.question(prompt)));
+    const line = readline(prompt);
+    return ok(line === null ? malNil() : malString(line));
   })
 );
+
+defFn("time-ms", () => {
+  throw "not implemented";
+});
+
+defFn("meta", () => {
+  throw "not implemented";
+});
+
+defFn("with-meta", () => {
+  throw "not implemented";
+});
+
+defFn("seq", () => {
+  throw "not implemented";
+});
+
+defFn("conj", () => {
+  throw "not implemented";
+});
 
 export default coreEnv;

@@ -1,10 +1,10 @@
 import { combine, err, ok, Result } from "neverthrow";
-import readline from "readline";
 import coreEnv, { malCallFunction } from "./core";
 import { MalEnv, malEnvGet, malEnvSet, malNewEnv } from "./env";
 import { MalError, malUnwrapAll } from "./errors";
 import { printForm } from "./printer";
 import { readStr } from "./reader";
+import { readline } from "./readline";
 import {
   malFunction,
   MalFunctionDef,
@@ -382,9 +382,12 @@ function startRepl() {
     return;
   }
 
-  const rl = readline.createInterface(process.stdin, process.stdout);
-  rl.setPrompt("user> ");
-  rl.on("line", (input) => {
+  mustEval('(println (str "Mal [" *host-language* "]"))');
+
+  for (;;) {
+    const input = readline("user> ");
+    if (input === null) break;
+    if (input === "") continue;
     rep(input).match(
       (output) => {
         console.log(output);
@@ -396,9 +399,7 @@ function startRepl() {
           error.type === "exception" ? printForm(error.data) : ""
         )
     );
-    rl.prompt();
-  });
-  rl.prompt();
+  }
 }
 
 startRepl();
