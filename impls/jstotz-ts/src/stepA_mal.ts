@@ -340,6 +340,8 @@ function malEval(ast: MalType, env: MalEnv): Result<MalType, MalError> {
           env: malNewEnv(malFn.value.env, malFn.value.paramNames, args),
         };
         continue;
+      default:
+        return ok(list);
     }
   }
 }
