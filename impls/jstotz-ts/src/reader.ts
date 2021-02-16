@@ -80,7 +80,6 @@ function readSequence<T extends MalType>(
         message: `Unexpected EOF while reading list. Expected ${endToken}`,
       });
     }
-    // foo
 
     const result = readForm(reader);
     if (result.isErr()) {
