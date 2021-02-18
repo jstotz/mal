@@ -353,9 +353,6 @@ function print(
   evalResult: Result<MalType, MalError>
 ): Result<string, MalError> {
   return evalResult.map((form) => {
-    if (process.env.DEBUG) {
-      // console.debug(debugForm(form));
-    }
     return printForm(form);
   });
 }
