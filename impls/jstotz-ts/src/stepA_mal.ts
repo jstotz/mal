@@ -149,15 +149,18 @@ function malEvalLet(
 }
 
 function malEvalDo(list: MalList, state: MalState): Result<MalState, MalError> {
-  for (let i = 1; i < list.value.length; i++) {
-    const form = list.value[i];
-    const evalResult = malEval(form, state.env);
-    if (evalResult.isErr()) return err(evalResult.error);
-    if (i === list.value.length - 1) {
-      return ok({ ...state, ast: evalResult.value });
-    }
-  }
-  return ok({ ...state, ast: malNil() });
+  const evalResult = malEvalAst(malList(list.value.slice(1, -1)), state.env);
+  if (evalResult.isErr()) return err(evalResult.error);
+  const newList = evalResult.value;
+  if (newList.type !== "list")
+    return err({
+      type: "type_error",
+      message: "Expected `do` return value to be a list",
+    });
+  return ok({
+    ...state,
+    ast: list.value[list.value.length - 1] ?? malNil(),
+  });
 }
 
 function malCastBoolean(ast: MalType): boolean {
