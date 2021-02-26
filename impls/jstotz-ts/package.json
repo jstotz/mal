@@ -3,11 +3,6 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "test": "cd ../.. && make test^jstotz-ts",
-    "test:step": "cd ../.. && make test^jstotz-ts^stepA",
-    "lint": "eslint ./src"
-  },
   "author": "Jay Stotz",
   "license": "ISC",
   "devDependencies": {
